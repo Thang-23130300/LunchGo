@@ -10,7 +10,7 @@ LunchGo V1.0 là dự án web thương mại điện tử bán đồ ăn trưa, 
 - Dữ liệu: TheMealDB và DummyJSON Recipes. Giá demo được lưu nội bộ bằng VND; dữ liệu công thức không phải sản phẩm bán thực.
 - Lưu nghiệp vụ demo: Redux và LocalStorage trong một trình duyệt.
 
-L02 sử dụng Vite để khởi tạo React/TypeScript. React Router, Redux Toolkit và Fetch là các công cụ bổ trợ được đề xuất cho các task sau. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
+L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React Router `8.5.1` để điều hướng. Redux Toolkit và Fetch là các công cụ bổ trợ được đề xuất cho các task sau. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
 
 ## Repository và thành viên
 
@@ -30,7 +30,7 @@ cd LunchGo
 
 ## Trạng thái khởi tạo
 
-L01 đã chuẩn bị README sơ bộ và `.gitignore` cho Node. L02 khởi tạo bộ khung Vite + React + TypeScript, kèm trang khởi động có bộ đếm để kiểm tra React state.
+L01 đã chuẩn bị README sơ bộ và `.gitignore` cho Node. L02 khởi tạo bộ khung Vite + React + TypeScript; L05 thay trang bộ đếm bằng router, layout và các trang placeholder.
 
 Việc cấp quyền và xác nhận clone của TV2/TV3 đang tạm hoãn theo quyết định của Leader. Phần này chưa được nghiệm thu và sẽ được xử lý sau.
 
@@ -49,7 +49,7 @@ npm install
 npm run dev
 ```
 
-Mở URL do Vite hiển thị trong terminal (mặc định `http://localhost:5173`). Trang khởi động hiển thị LunchGo và nút tăng bộ đếm.
+Mở URL do Vite hiển thị trong terminal (mặc định `http://localhost:5173`). Dùng menu để chuyển giữa các trang LunchGo.
 
 Kiểm tra và build:
 
@@ -61,7 +61,39 @@ npm run preview
 
 `build` kiểm tra TypeScript trước khi xuất vào `dist/`; `preview` phục vụ bản build tại URL được in trong terminal. Khi cài lại theo đúng `package-lock.json`, dùng `npm ci`.
 
-L02 chưa cần biến môi trường hoặc backend. Router/layout, Redux, Bootstrap/SCSS và cấu trúc module sẽ được thực hiện trong các task tương ứng.
+Ứng dụng hiện chưa cần biến môi trường hoặc backend. Redux và Bootstrap/SCSS sẽ được thực hiện trong các task tương ứng.
+
+## Điều hướng 
+
+| Đường dẫn | Trang |
+| --- | --- |
+| `/` | Trang chủ |
+| `/menu` | Thực đơn |
+| `/product/:id` | Chi tiết món; nhận `id` từ URL |
+| `/cart` | Giỏ hàng |
+| `/checkout` | Thanh toán |
+| `/admin` | Quản trị |
+
+Customer và Admin có layout riêng, dùng chung Header/Footer. Các trang hiện là placeholder; `/admin` chưa có xác thực. URL không khớp hiển thị trang 404. Vào `/menu` để mở liên kết chi tiết mẫu.
+
+Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
+
+## Cấu trúc source 
+
+- `src/app`: cấu hình ứng dụng; `src/features`: các module nghiệp vụ.
+- `src/components`: component dùng chung; `src/pages`: các trang.
+- `src/models`: kiểu dữ liệu; `src/services`: kết nối và xử lý dữ liệu.
+- `src/styles`: style dùng chung; `src/utils`: hàm tiện ích; `src/data`: dữ liệu demo/fallback.
+
+Các thư mục mới dùng `.gitkeep` để Git lưu được khi còn trống. Alias `@/` trỏ tới `src/`, ví dụ `import App from '@/App.tsx'`; đã cấu hình đồng bộ trong TypeScript và Vite.
+
+## Quy ước Git và PR 
+
+- `main` là nhánh ổn định; thay đổi qua PR, không push trực tiếp lên `main`.
+- Tên nhánh: `feat/<task>-<ten>`, `fix/<task>-<ten>` hoặc `docs/<task>-<ten>`, ví dụ `feat/l04-folder-structure`.
+- Mỗi PR chỉ làm một task; không tự sửa code của thành viên khác ngoài phạm vi đã thống nhất.
+- PR ghi Task ID, thay đổi chính, kết quả kiểm thử và ảnh giao diện nếu có. Khi đổi code, chạy `npm run lint` và `npm run build`; mục không áp dụng cần ghi lý do.
+- Không commit `node_modules/`, `dist/`, `.env` thật, token hoặc secret. Giữ `package-lock.json`; `.env.example` chỉ chứa giá trị mẫu.
 
 ## Quy ước commit 
 
