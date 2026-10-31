@@ -10,7 +10,7 @@ LunchGo V1.0 là dự án web thương mại điện tử bán đồ ăn trưa, 
 - Dữ liệu: TheMealDB và DummyJSON Recipes. Giá demo được lưu nội bộ bằng VND; dữ liệu công thức không phải sản phẩm bán thực.
 - Lưu nghiệp vụ demo: Redux và LocalStorage trong một trình duyệt.
 
-L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React Router `8.5.1` để điều hướng. Redux Toolkit và Fetch là các công cụ bổ trợ được đề xuất cho các task sau. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
+L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React Router `8.5.1` để điều hướng. L06 dùng Redux Toolkit `2.13.0`, React Redux `9.3.1`, Bootstrap `5.3.8` và Sass `1.107.1`. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
 
 ## Repository và thành viên
 
@@ -61,7 +61,14 @@ npm run preview
 
 `build` kiểm tra TypeScript trước khi xuất vào `dist/`; `preview` phục vụ bản build tại URL được in trong terminal. Khi cài lại theo đúng `package-lock.json`, dùng `npm ci`.
 
-Ứng dụng hiện chưa cần biến môi trường hoặc backend. Redux và Bootstrap/SCSS sẽ được thực hiện trong các task tương ứng.
+Ứng dụng hiện chưa cần biến môi trường hoặc backend.
+
+## Store và giao diện (L06)
+
+- Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
+- Dùng `useAppDispatch` và `useAppSelector` từ `src/app/hooks.ts`; `RootState`/`AppDispatch` được suy ra từ store.
+- Cart slice: `src/features/cart/cartSlice.ts`, khởi tạo `{ items: [] }`, có action `clearCart()`. Mỗi item tạm gồm `productId` và `quantity`; model chung sẽ được thống nhất khi triển khai nghiệp vụ. Chưa thêm thao tác mua hàng hay LocalStorage.
+- SCSS entry: `src/styles/main.scss`, nạp Bootstrap và reset. Chỉnh biến màu tại `src/styles/_variables.scss`; Bootstrap và CSS variables `--lunchgo-*` dùng cùng bộ màu.
 
 ## Điều hướng 
 

@@ -1,0 +1,18 @@
+@use './variables' as theme;
+@use 'bootstrap/scss/bootstrap' with (
+  $primary: theme.$primary,
+  $secondary: theme.$secondary,
+  $body-bg: theme.$background,
+  $body-color: theme.$text,
+  $border-color: theme.$border,
+  $font-family-sans-serif: theme.$font-family
+);
+@use './reset';
+
+:root {
+  --lunchgo-primary: #{theme.$primary};
+  --lunchgo-secondary: #{theme.$secondary};
+  --lunchgo-background: #{theme.$background};
+  --lunchgo-text: #{theme.$text};
+  --lunchgo-border: #{theme.$border};
+}
