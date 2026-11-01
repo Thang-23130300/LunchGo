@@ -1,14 +1,13 @@
 # LunchGo
 
-LunchGo V1.0 là dự án web thương mại điện tử bán đồ ăn trưa, phục vụ luồng chọn món, mua hàng và quản trị trong phạm vi bài tập nhóm.
+LunchGo V1.0 là dự án web đồ ăn trưa. Kiến trúc tuần 1 chốt tại L08: React + fake API + dữ liệu local, chỉ public-user, không làm Admin. Các thay đổi runtime theo kiến trúc mới sẽ thực hiện từ L09.
 
 ## Công nghệ
 
 - Frontend: ReactJS, TypeScript/TSX, Node.js, Redux, Hooks và Props/State.
 - Giao diện: Bootstrap, SCSS, HTML5/CSS3.
-- Admin: DataTables, JavaScript và jQuery; ưu tiên React wrapper, tránh thao tác trực tiếp lên DOM do React quản lý.
 - Dữ liệu: TheMealDB và DummyJSON Recipes. Giá demo được lưu nội bộ bằng VND; dữ liệu công thức không phải sản phẩm bán thực.
-- Lưu nghiệp vụ demo: Redux và LocalStorage trong một trình duyệt.
+- Redux hiện giữ state runtime. LocalStorage là định hướng lưu dữ liệu trong một origin, sẽ triển khai tại L12; không dùng để chia sẻ trạng thái giữa máy.
 
 L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React Router `8.5.1` để điều hướng. L06 dùng Redux Toolkit `2.13.0`, React Redux `9.3.1`, Bootstrap `5.3.8` và Sass `1.107.1`. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
 
@@ -17,9 +16,9 @@ L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React 
 - Repository: [Thang-23130300/LunchGo](https://github.com/Thang-23130300/LunchGo).
 - Visibility hiện tại: public.
 - Nhánh `main`: [quy tắc bảo vệ đang hoạt động](https://github.com/Thang-23130300/LunchGo/rules/26205636), chặn xóa nhánh và force-push.
-- TV1: Leader, quản lý repository và module mua hàng.
-- TV2: [huynhquangnghia](https://github.com/huynhquangnghia), Discovery, dữ liệu API và các module được phân công.
-- TV3: [tien123-web](https://github.com/tien123-web), Admin và dữ liệu nghiệp vụ demo.
+- Leader: kiến trúc, Router/Store, contract, tích hợp và nghiệm thu.
+- B: [huynhquangnghia](https://github.com/huynhquangnghia), đã đưa model/client/mapper/seed và Menu/Product lên PR #1.
+- D: tiếp nhận phần B, hoàn thiện Search/Filter/Sort/Page/Share/History theo bảng phân công mới; không giao Admin.
 
 Sau khi được cấp quyền truy cập, mỗi thành viên có thể clone:
 
@@ -28,15 +27,14 @@ git clone https://github.com/Thang-23130300/LunchGo.git
 cd LunchGo
 ```
 
-## Trạng thái khởi tạo
+## Tiến độ đến L08
 
-L01 đã chuẩn bị README sơ bộ và `.gitignore` cho Node. L02 khởi tạo bộ khung Vite + React + TypeScript; L05 thay trang bộ đếm bằng router, layout và các trang placeholder.
+Phần B đã có trên `main@0314a3c`. Working tree hiện chỉ giữ tài liệu L07 + L08, chưa áp dụng thay đổi runtime từ L09 trở đi.
 
-Việc cấp quyền và xác nhận clone của TV2/TV3 đang tạm hoãn theo quyết định của Leader. Phần này chưa được nghiệm thu và sẽ được xử lý sau.
+- [L07: đối chiếu L01–L06 và phần còn thiếu](docs/leader-test-results.md).
+- [L08: kiến trúc React + fake API + local, URL state và file sở hữu](docs/architecture-week1.md).
 
-Mô tả repository và quy tắc bảo vệ `main` đã được cấu hình trên GitHub. Clone sang một thư mục khác thành công khi repository còn rỗng; việc kiểm tra clone có nội dung cần thực hiện sau khi đưa các file lên remote.
-
-Các file tại máy chưa được commit/push theo yêu cầu của Leader. Cần đưa README và `.gitignore` lên `main` và kiểm tra lại bản clone trước khi chốt phần L01 không bao gồm quyền truy cập đang tạm hoãn.
+Phần commit message bên dưới được giữ nguyên. Trợ lý không tự commit/push.
 
 ## Cài đặt và chạy 
 
@@ -79,9 +77,9 @@ npm run preview
 | `/product/:id` | Chi tiết món; nhận `id` từ URL |
 | `/cart` | Giỏ hàng |
 | `/checkout` | Thanh toán |
-| `/admin` | Quản trị |
+| `/admin` | Mã cũ, sẽ gỡ ở L09 |
 
-Customer và Admin có layout riêng, dùng chung Header/Footer. Các trang hiện là placeholder; `/admin` chưa có xác thực. URL không khớp hiển thị trang 404. Vào `/menu` để mở liên kết chi tiết mẫu.
+Menu/Product đang dùng code B đã có trên main; cart/checkout còn là placeholder. Route và layout Admin cũ vẫn tồn tại ở mốc L08, sẽ gỡ khi làm L09 theo kiến trúc mới. URL không khớp hiển thị 404.
 
 Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
 
