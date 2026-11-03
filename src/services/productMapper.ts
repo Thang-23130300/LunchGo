@@ -4,6 +4,7 @@ import type { MealDbMeal } from '@/services/theMealDbClient'
 import type { DummyRecipe } from '@/services/dummyJsonClient'
 
 const DEFAULT_DEMO_PRICE = 35000
+const OTHER_CATEGORY = 'Khác'
 
 function getMealDbIngredients(meal: MealDbMeal): string[] {
   const ingredients: string[] = []
@@ -20,15 +21,17 @@ function getMealDbIngredients(meal: MealDbMeal): string[] {
 }
 
 export function mapMealDbMeal(meal: MealDbMeal): LunchProduct {
-  if (!meal.idMeal || !meal.strMeal) {
+  const id = meal.idMeal?.trim()
+  const name = meal.strMeal?.trim()
+  if (!id || !name) {
     throw new Error('TheMealDB meal is missing its ID or name')
   }
 
   return {
-    id: `themealdb:${meal.idMeal}`,
-    name: meal.strMeal,
-    image: meal.strMealThumb ?? '',
-    category: meal.strCategory ?? 'Khác',
+    id: `themealdb:${id}`,
+    name,
+    image: meal.strMealThumb?.trim() || '',
+    category: meal.strCategory?.trim() || OTHER_CATEGORY,
     price: DEFAULT_DEMO_PRICE,
     source: 'themealdb',
     ingredients: getMealDbIngredients(meal),
@@ -37,19 +40,26 @@ export function mapMealDbMeal(meal: MealDbMeal): LunchProduct {
 }
 
 export function mapDummyRecipe(recipe: DummyRecipe): LunchProduct {
-  if (!recipe.id || !recipe.name) {
-    throw new Error('DummyJSON recipe is missing its ID or name')
+  const name = recipe.name?.trim()
+  if (!Number.isSafeInteger(recipe.id) || recipe.id < 1 || !name) {
+    throw new Error('DummyJSON recipe has an invalid ID or missing name')
   }
 
-  return {
+  const product: LunchProduct = {
     id: `dummyjson:${recipe.id}`,
-    name: recipe.name,
-    image: recipe.image ?? '',
-    category: recipe.cuisine ?? recipe.mealType?.[0] ?? 'Khác',
+    name,
+    image: recipe.image?.trim() || '',
+    category: recipe.cuisine?.trim() || recipe.mealType?.[0]?.trim() || OTHER_CATEGORY,
     price: DEFAULT_DEMO_PRICE,
     source: 'dummyjson',
-    ingredients: recipe.ingredients ?? [],
-    calories: recipe.caloriesPerServing,
+    ingredients: (recipe.ingredients ?? []).map((ingredient) => ingredient.trim()).filter(Boolean),
     isAvailable: true,
   }
+
+  const calories = recipe.caloriesPerServing
+  if (typeof calories === 'number' && Number.isFinite(calories) && calories >= 0) {
+    product.calories = calories
+  }
+
+  return product
 }
