@@ -1,6 +1,6 @@
 # LunchGo
 
-LunchGo V1.0 là dự án web đồ ăn trưa. Kiến trúc tuần 1 chốt tại L08: React + fake API + dữ liệu local, chỉ public-user, không làm Admin. Các thay đổi runtime theo kiến trúc mới sẽ thực hiện từ L09.
+LunchGo V1.0 là dự án web đồ ăn trưa. Kiến trúc tuần 1 chốt tại L08: React + fake API + dữ liệu local, chỉ public-user, không làm Admin.
 
 ## Công nghệ
 
@@ -27,9 +27,9 @@ git clone https://github.com/Thang-23130300/LunchGo.git
 cd LunchGo
 ```
 
-## Tiến độ đến L08
+## Tiến độ đến L09
 
-Phần B đã có trên `main@0314a3c`. Working tree hiện chỉ giữ tài liệu L07 + L08, chưa áp dụng thay đổi runtime từ L09 trở đi.
+Phần B đã có trong PR #1. PR #2 đã đưa giao diện thực đơn và chi tiết món của D vào `main`.
 
 - [L07: đối chiếu L01–L06 và phần còn thiếu](docs/leader-test-results.md).
 - [L08: kiến trúc React + fake API + local, URL state và file sở hữu](docs/architecture-week1.md).
@@ -77,9 +77,9 @@ npm run preview
 | `/product/:id` | Chi tiết món; nhận `id` từ URL |
 | `/cart` | Giỏ hàng |
 | `/checkout` | Thanh toán |
-| `/admin` | Mã cũ, sẽ gỡ ở L09 |
+| `*` | Trang 404 cho đường dẫn không tồn tại |
 
-Menu/Product đang dùng code B đã có trên main; cart/checkout còn là placeholder. Route và layout Admin cũ vẫn tồn tại ở mốc L08, sẽ gỡ khi làm L09 theo kiến trúc mới. URL không khớp hiển thị 404.
+`BrowserRouter` xử lý URL và nút Back/Forward của trình duyệt. Liên kết nội bộ dùng React Router. Cart/checkout còn là placeholder; `/admin` và các đường dẫn con trả về trang 404.
 
 Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
 

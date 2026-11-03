@@ -17,3 +17,13 @@ Model, seed, API client và mapper của B không bị xóa hoặc làm lại. M
 - L10–L11: chốt product/query contract và entry tích hợp cho D.
 - L12: persistence/cart/cache và dữ liệu local lỗi/rỗng.
 - L13–L14: chờ module D và điều kiện nghiệm thu, không coi đã hoàn tất ở mốc L08.
+
+## L09 — kiểm tra điều hướng
+
+| Ca kiểm thử trên bản build (`npm run preview`) | Kết quả |
+| --- | --- |
+| L09-AC01: mở trực tiếp và tải lại `/menu`, `/product/:id` với món Phở bò từ seed | Đạt |
+| L09-AC02: mở Trang chủ → Thực đơn → Chi tiết qua liên kết nội bộ; dùng Back/Forward giữa thực đơn và chi tiết | Đạt |
+| URL lạ, `/admin` và `/admin/settings` hiện 404; liên kết 404 về trang chủ; giỏ hàng và thanh toán vẫn mở | Đạt |
+
+`npm run lint` và `npm run build` đều đạt. Kiểm tra nhanh PR #2: tìm kiếm, lọc, sắp xếp, phân trang và sao chép đường dẫn món hoạt động ở các ca đã thử; ID local không tồn tại hiện thông báo. Menu chưa khôi phục bộ lọc từ query (D04). Nút “Quay lại thực đơn” có thể về trang trước ngoài Menu (D06). Hai điểm này nằm ngoài ca nghiệm thu Router của L09.
