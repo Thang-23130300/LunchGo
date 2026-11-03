@@ -41,9 +41,18 @@ function ShareButton({ productName }: ShareButtonProps) {
 function ProductPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const [product, setProduct] = useState<LunchProduct | null>(null)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
+
+  // Lấy đường dẫn menu đã lưu khi user điều hướng từ MenuPage
+  const menuHref: string =
+    (location.state as { fromMenu?: string } | null)?.fromMenu ?? '/menu'
+
+  function handleBack() {
+    navigate(menuHref)
+  }
 
   useEffect(() => {
     let active = true
@@ -89,14 +98,6 @@ function ProductPage() {
     loadProduct()
     return () => { active = false }
   }, [id])
-
-  function handleBack() {
-    if (window.history.length > 1) {
-      navigate(-1)
-    } else {
-      navigate('/menu')
-    }
-  }
 
   if (loading) {
     return (

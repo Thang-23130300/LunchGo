@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import { fallbackCatalog } from '@/data/fallbackCatalog'
 import { getRecipes } from '@/services/dummyJsonClient'
@@ -10,6 +10,7 @@ const PAGE_SIZE_OPTIONS = [12, 24, 48]
 const DEFAULT_PAGE_SIZE = 12
 
 type SortOption = 'default' | 'price_asc' | 'price_desc'
+const VALID_SORTS: SortOption[] = ['default', 'price_asc', 'price_desc']
 
 const SORT_LABELS: Record<SortOption, string> = {
   default: 'Mặc định',
@@ -27,16 +28,75 @@ function sortProducts(list: LunchProduct[], sort: SortOption): LunchProduct[] {
   return list
 }
 
+/** Ghi params vào URL, bỏ qua param có giá trị mặc định */
+function buildSearch(params: {
+  q: string
+  category: string
+  sort: SortOption
+  page: number
+  pageSize: number
+}): string {
+  const sp = new URLSearchParams()
+  if (params.q) sp.set('q', params.q)
+  if (params.category !== ALL_CATEGORIES) sp.set('category', params.category)
+  if (params.sort !== 'default') sp.set('sort', params.sort)
+  if (params.page > 1) sp.set('page', String(params.page))
+  if (params.pageSize !== DEFAULT_PAGE_SIZE) sp.set('pageSize', String(params.pageSize))
+  const s = sp.toString()
+  return s ? `?${s}` : ''
+}
+
 function MenuPage() {
   const [products, setProducts] = useState<LunchProduct[]>(fallbackCatalog)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
 
-  const [keyword, setKeyword] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES)
-  const [sort, setSort] = useState<SortOption>('default')
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Đọc trạng thái lọc từ URL
+  const urlKeyword = searchParams.get('q') ?? ''
+  const selectedCategory = searchParams.get('category') ?? ALL_CATEGORIES
+
+  // State local cho ô input — tránh nhân đôi ký tự khi gõ nhanh / IME tiếng Việt
+  const [keyword, setKeyword] = useState(urlKeyword)
+
+  // Đồng bộ ngược: khi URL thay đổi từ bên ngoài (Back/Forward/paste URL), cập nhật ô input
+  useEffect(() => {
+    setKeyword(urlKeyword)
+  }, [urlKeyword])
+  const rawSort = searchParams.get('sort') ?? 'default'
+  const sort: SortOption = VALID_SORTS.includes(rawSort as SortOption)
+    ? (rawSort as SortOption)
+    : 'default'
+  const rawPage = Number(searchParams.get('page'))
+  const page = rawPage >= 1 ? rawPage : 1
+  const rawPageSize = Number(searchParams.get('pageSize'))
+  const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize) ? rawPageSize : DEFAULT_PAGE_SIZE
+
+  /** Ghi state lọc vào URL, reset page về 1 khi thay đổi bộ lọc.
+   *  replaceEntry = true  → thay thế history hiện tại (dùng cho keystroke liên tục)
+   *  replaceEntry = false → push entry mới (dùng cho category/sort/page/pageSize)
+   */
+  function updateParams(
+    patch: Partial<{
+      q: string
+      category: string
+      sort: SortOption
+      page: number
+      pageSize: number
+    }>,
+    resetPage = false,
+    replaceEntry = false,
+  ) {
+    const next = {
+      q: patch.q !== undefined ? patch.q : keyword,
+      category: patch.category !== undefined ? patch.category : selectedCategory,
+      sort: patch.sort !== undefined ? patch.sort : sort,
+      page: resetPage ? 1 : (patch.page !== undefined ? patch.page : page),
+      pageSize: patch.pageSize !== undefined ? patch.pageSize : pageSize,
+    }
+    setSearchParams(buildSearch(next), { replace: replaceEntry })
+  }
 
   useEffect(() => {
     let active = true
@@ -99,23 +159,20 @@ function MenuPage() {
   }, [sortedProducts, safePage, pageSize])
 
   function handleKeywordChange(value: string) {
-    setKeyword(value)
-    setPage(1)
+    setKeyword(value)                            // cập nhật ô input ngay lập tức
+    updateParams({ q: value }, true, true)       // sync URL (replace, không tạo history mới)
   }
 
   function handleCategoryChange(value: string) {
-    setSelectedCategory(value)
-    setPage(1)
+    updateParams({ category: value }, true, false)
   }
 
   function handleSortChange(value: SortOption) {
-    setSort(value)
-    setPage(1)
+    updateParams({ sort: value }, true, false)
   }
 
   function handlePageSizeChange(value: number) {
-    setPageSize(value)
-    setPage(1)
+    updateParams({ pageSize: value }, true, false)
   }
 
   return (
@@ -203,7 +260,11 @@ function MenuPage() {
                   <p className="fw-bold text-danger mt-auto mb-3">
                     {formatPrice(product.price)}
                   </p>
-                  <Link className="btn btn-outline-primary" to={`/product/${product.id}`}>
+                  <Link
+                    className="btn btn-outline-primary"
+                    to={`/product/${product.id}`}
+                    state={{ fromMenu: `/menu${buildSearch({ q: keyword, category: selectedCategory, sort, page: safePage, pageSize })}` }}
+                  >
                     Xem chi tiết
                   </Link>
                 </div>
@@ -227,7 +288,7 @@ function MenuPage() {
                 <li className={`page-item${safePage === 1 ? ' disabled' : ''}`}>
                   <button
                     className="page-link"
-                    onClick={() => setPage((p) => p - 1)}
+                    onClick={() => updateParams({ page: safePage - 1 })}
                     disabled={safePage === 1}
                     aria-label="Trang trước"
                   >
@@ -238,7 +299,7 @@ function MenuPage() {
                   <li key={p} className={`page-item${p === safePage ? ' active' : ''}`}>
                     <button
                       className="page-link"
-                      onClick={() => setPage(p)}
+                      onClick={() => updateParams({ page: p })}
                       aria-current={p === safePage ? 'page' : undefined}
                     >
                       {p}
@@ -248,7 +309,7 @@ function MenuPage() {
                 <li className={`page-item${safePage === totalPages ? ' disabled' : ''}`}>
                   <button
                     className="page-link"
-                    onClick={() => setPage((p) => p + 1)}
+                    onClick={() => updateParams({ page: safePage + 1 })}
                     disabled={safePage === totalPages}
                     aria-label="Trang sau"
                   >
