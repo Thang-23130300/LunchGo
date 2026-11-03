@@ -1,11 +1,10 @@
 import { Route, Routes } from 'react-router'
 import CustomerLayout from '@/components/layouts/CustomerLayout'
+import { MenuPage, ProductPage } from '@/features/discovery'
 import CartPage from '@/pages/CartPage'
 import CheckoutPage from '@/pages/CheckoutPage'
 import HomePage from '@/pages/HomePage'
-import MenuPage from '@/pages/MenuPage'
 import NotFoundPage from '@/pages/NotFoundPage'
-import ProductPage from '@/pages/ProductPage'
 
 function AppRoutes() {
   return (
