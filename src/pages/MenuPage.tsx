@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useLocation, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import { getCatalog } from '@/services/catalogService'
 
@@ -9,6 +9,14 @@ const DEFAULT_PAGE_SIZE = 12
 
 type SortOption = 'default' | 'price_asc' | 'price_desc'
 const VALID_SORTS: SortOption[] = ['default', 'price_asc', 'price_desc']
+
+type MenuQuery = {
+  q: string
+  category: string
+  sort: SortOption
+  page: number
+  pageSize: number
+}
 
 const SORT_LABELS: Record<SortOption, string> = {
   default: 'Mặc định',
@@ -26,14 +34,18 @@ function sortProducts(list: LunchProduct[], sort: SortOption): LunchProduct[] {
   return list
 }
 
-/** Ghi params vào URL, bỏ qua param có giá trị mặc định */
-function buildSearch(params: {
-  q: string
-  category: string
-  sort: SortOption
-  page: number
-  pageSize: number
-}): string {
+function normalizeKeyword(value: string): string {
+  return value.normalize('NFC').trim()
+}
+
+function readPositiveInteger(value: string | null): number | undefined {
+  if (!value || !/^\d+$/.test(value)) return undefined
+
+  const number = Number(value)
+  return Number.isSafeInteger(number) && number > 0 ? number : undefined
+}
+
+function buildSearch(params: MenuQuery): string {
   const sp = new URLSearchParams()
   if (params.q) sp.set('q', params.q)
   if (params.category !== ALL_CATEGORIES) sp.set('category', params.category)
@@ -49,52 +61,20 @@ function MenuPage() {
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
 
+  const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [inputDraft, setInputDraft] = useState<{ key: string; text: string } | null>(null)
+  const composing = useRef(false)
+  const pendingSearch = useRef<{ key: string; search: string } | null>(null)
 
-  // Đọc trạng thái lọc từ URL
-  const urlKeyword = searchParams.get('q') ?? ''
-  const selectedCategory = searchParams.get('category') ?? ALL_CATEGORIES
-
-  // State local cho ô input — tránh nhân đôi ký tự khi gõ nhanh / IME tiếng Việt
-  const [keyword, setKeyword] = useState(urlKeyword)
-
-  // Đồng bộ ngược: khi URL thay đổi từ bên ngoài (Back/Forward/paste URL), cập nhật ô input
-  useEffect(() => {
-    setKeyword(urlKeyword)
-  }, [urlKeyword])
-  const rawSort = searchParams.get('sort') ?? 'default'
-  const sort: SortOption = VALID_SORTS.includes(rawSort as SortOption)
-    ? (rawSort as SortOption)
-    : 'default'
-  const rawPage = Number(searchParams.get('page'))
-  const page = rawPage >= 1 ? rawPage : 1
-  const rawPageSize = Number(searchParams.get('pageSize'))
+  const keyword = normalizeKeyword(searchParams.get('q') ?? '')
+  if (inputDraft && inputDraft.key !== location.key) setInputDraft(null)
+  const inputValue = inputDraft?.key === location.key ? inputDraft.text : keyword
+  const rawSort = searchParams.get('sort')
+  const sort = VALID_SORTS.find((option) => option === rawSort) ?? 'default'
+  const page = readPositiveInteger(searchParams.get('page')) ?? 1
+  const rawPageSize = readPositiveInteger(searchParams.get('pageSize')) ?? DEFAULT_PAGE_SIZE
   const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize) ? rawPageSize : DEFAULT_PAGE_SIZE
-
-  /** Ghi state lọc vào URL, reset page về 1 khi thay đổi bộ lọc.
-   *  replaceEntry = true  → thay thế history hiện tại (dùng cho keystroke liên tục)
-   *  replaceEntry = false → push entry mới (dùng cho category/sort/page/pageSize)
-   */
-  function updateParams(
-    patch: Partial<{
-      q: string
-      category: string
-      sort: SortOption
-      page: number
-      pageSize: number
-    }>,
-    resetPage = false,
-    replaceEntry = false,
-  ) {
-    const next = {
-      q: patch.q !== undefined ? patch.q : keyword,
-      category: patch.category !== undefined ? patch.category : selectedCategory,
-      sort: patch.sort !== undefined ? patch.sort : sort,
-      page: resetPage ? 1 : (patch.page !== undefined ? patch.page : page),
-      pageSize: patch.pageSize !== undefined ? patch.pageSize : pageSize,
-    }
-    setSearchParams(buildSearch(next), { replace: replaceEntry })
-  }
 
   useEffect(() => {
     let active = true
@@ -118,14 +98,16 @@ function MenuPage() {
     () => [ALL_CATEGORIES, ...new Set(products.map((p) => p.category))],
     [products],
   )
+  const rawCategory = searchParams.get('category')
+  const selectedCategory = categories.find((category) => category === rawCategory) ?? ALL_CATEGORIES
 
   const filteredProducts = useMemo(() => {
-    const kw = keyword.trim().toLowerCase()
+    const kw = keyword.toLowerCase()
     return products.filter((p) => {
       const matchesKeyword =
         !kw ||
-        p.name.toLowerCase().includes(kw) ||
-        p.ingredients.some((ing) => ing.toLowerCase().includes(kw))
+        normalizeKeyword(p.name).toLowerCase().includes(kw) ||
+        p.ingredients.some((ing) => normalizeKeyword(ing).toLowerCase().includes(kw))
       const matchesCategory =
         selectedCategory === ALL_CATEGORIES || p.category === selectedCategory
       return matchesKeyword && matchesCategory
@@ -139,27 +121,51 @@ function MenuPage() {
 
   const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize))
   const safePage = Math.min(page, totalPages)
+  const query: MenuQuery = { q: keyword, category: selectedCategory, sort, page: safePage, pageSize }
+  const canonicalSearch = buildSearch(query)
+
+  useEffect(() => {
+    pendingSearch.current = null
+  }, [location.key])
+
+  useEffect(() => {
+    // Kiểm tra danh mục và số trang sau khi catalog đã tải xong.
+    if (!loading && !apiError && location.search !== canonicalSearch) {
+      setSearchParams(canonicalSearch, { replace: true })
+    }
+  }, [loading, apiError, location.search, canonicalSearch, setSearchParams])
 
   const pagedProducts = useMemo(() => {
     const start = (safePage - 1) * pageSize
     return sortedProducts.slice(start, start + pageSize)
   }, [sortedProducts, safePage, pageSize])
 
+  function updateParams(patch: Partial<MenuQuery>) {
+    const search = buildSearch({ ...query, ...patch })
+    if (search === location.search) return
+    if (pendingSearch.current?.key === location.key && pendingSearch.current.search === search) return
+
+    pendingSearch.current = { key: location.key, search }
+    setSearchParams(search)
+  }
+
   function handleKeywordChange(value: string) {
-    setKeyword(value)                            // cập nhật ô input ngay lập tức
-    updateParams({ q: value }, true, true)       // sync URL (replace, không tạo history mới)
+    // Giữ ký tự đang gõ, kể cả khoảng trắng, cho tới khi URL chuyển sang truy vấn mới.
+    setInputDraft({ key: location.key, text: value })
+    const q = normalizeKeyword(value)
+    if (!composing.current && q !== keyword) updateParams({ q, page: 1 })
   }
 
   function handleCategoryChange(value: string) {
-    updateParams({ category: value }, true, false)
+    updateParams({ category: value, page: 1 })
   }
 
   function handleSortChange(value: SortOption) {
-    updateParams({ sort: value }, true, false)
+    updateParams({ sort: value, page: 1 })
   }
 
   function handlePageSizeChange(value: number) {
-    updateParams({ pageSize: value }, true, false)
+    updateParams({ pageSize: value, page: 1 })
   }
 
   return (
@@ -183,8 +189,13 @@ function MenuPage() {
             type="search"
             className="form-control"
             placeholder="Tìm món ăn hoặc nguyên liệu..."
-            value={keyword}
+            value={inputValue}
             onChange={(e) => handleKeywordChange(e.target.value)}
+            onCompositionStart={() => { composing.current = true }}
+            onCompositionEnd={(e) => {
+              composing.current = false
+              handleKeywordChange(e.currentTarget.value)
+            }}
             aria-label="Tìm kiếm món ăn"
           />
         </div>
@@ -250,7 +261,7 @@ function MenuPage() {
                   <Link
                     className="btn btn-outline-primary"
                     to={`/product/${encodeURIComponent(product.id)}`}
-                    state={{ fromMenu: `/menu${buildSearch({ q: keyword, category: selectedCategory, sort, page: safePage, pageSize })}` }}
+                    state={{ fromMenu: `/menu${canonicalSearch}` }}
                   >
                     Xem chi tiết
                   </Link>

@@ -43,9 +43,10 @@ function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
 
-  // Lấy đường dẫn menu đã lưu khi user điều hướng từ MenuPage
-  const menuHref: string =
-    (location.state as { fromMenu?: string } | null)?.fromMenu ?? '/menu'
+  const fromMenu: unknown = (location.state as { fromMenu?: unknown } | null)?.fromMenu
+  const menuHref = typeof fromMenu === 'string' && (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
+    ? fromMenu
+    : '/menu'
 
   function handleBack() {
     navigate(menuHref)
