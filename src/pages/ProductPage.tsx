@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
-import { fallbackCatalog } from '@/data/fallbackCatalog'
-import { getMealById } from '@/services/theMealDbClient'
-import { getRecipeById } from '@/services/dummyJsonClient'
-import { mapMealDbMeal, mapDummyRecipe } from '@/services/productMapper'
+import { getCatalogProduct } from '@/services/catalogService'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -67,26 +64,8 @@ function ProductPage() {
         return
       }
 
-      const separatorIndex = id.indexOf(':')
-      const source = separatorIndex >= 0 ? id.slice(0, separatorIndex) : ''
-      const sourceId = separatorIndex >= 0 ? id.slice(separatorIndex + 1) : ''
-
       try {
-        let result: LunchProduct | null = null
-
-        if (source === 'local') {
-          result = fallbackCatalog.find((item) => item.id === id) ?? null
-        } else if (source === 'themealdb') {
-          const meal = await getMealById(sourceId)
-          result = meal ? mapMealDbMeal(meal) : null
-        } else if (source === 'dummyjson') {
-          if (!/^\d+$/.test(sourceId)) {
-            throw new Error('Invalid recipe ID')
-          }
-          const recipe = await getRecipeById(Number(sourceId))
-          result = mapDummyRecipe(recipe)
-        }
-
+        const result = await getCatalogProduct(id)
         if (active) setProduct(result)
       } catch {
         if (active) setApiError(true)

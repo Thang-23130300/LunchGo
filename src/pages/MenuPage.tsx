@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
-import { fallbackCatalog } from '@/data/fallbackCatalog'
-import { getRecipes } from '@/services/dummyJsonClient'
-import { mapDummyRecipe } from '@/services/productMapper'
+import { getCatalog } from '@/services/catalogService'
 
 const ALL_CATEGORIES = 'Tất cả'
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
@@ -47,7 +45,7 @@ function buildSearch(params: {
 }
 
 function MenuPage() {
-  const [products, setProducts] = useState<LunchProduct[]>(fallbackCatalog)
+  const [products, setProducts] = useState<LunchProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
 
@@ -103,21 +101,10 @@ function MenuPage() {
 
     async function loadProducts() {
       try {
-        const result = await getRecipes(50)
-        const apiProducts = result.recipes.map(mapDummyRecipe)
-        const combined = [...apiProducts, ...fallbackCatalog]
-        const unique = Array.from(
-          new Map(combined.map((p) => [p.id, p])).values(),
-        )
-        if (active) {
-          setProducts(unique)
-          setApiError(false)
-        }
+        const result = await getCatalog()
+        if (active) setProducts(result)
       } catch {
-        if (active) {
-          setProducts(fallbackCatalog)
-          setApiError(true)
-        }
+        if (active) setApiError(true)
       } finally {
         if (active) setLoading(false)
       }
@@ -186,7 +173,7 @@ function MenuPage() {
 
       {apiError && (
         <div className="alert alert-warning" role="alert">
-          Không thể kết nối máy chủ món ăn. LunchGo đang sử dụng dữ liệu dự phòng.
+          Không thể tải thực đơn. Vui lòng thử lại sau.
         </div>
       )}
 
@@ -231,7 +218,7 @@ function MenuPage() {
         <p className="text-secondary" role="status">Đang tải thực đơn...</p>
       )}
 
-      {!loading && sortedProducts.length === 0 && (
+      {!loading && !apiError && sortedProducts.length === 0 && (
         <div className="alert alert-info" role="status">
           Không tìm thấy món ăn phù hợp.
         </div>
@@ -262,7 +249,7 @@ function MenuPage() {
                   </p>
                   <Link
                     className="btn btn-outline-primary"
-                    to={`/product/${product.id}`}
+                    to={`/product/${encodeURIComponent(product.id)}`}
                     state={{ fromMenu: `/menu${buildSearch({ q: keyword, category: selectedCategory, sort, page: safePage, pageSize })}` }}
                   >
                     Xem chi tiết
@@ -274,7 +261,7 @@ function MenuPage() {
         </div>
       )}
 
-      {!loading && (
+      {!loading && !apiError && (
         <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
           <p className="text-secondary mb-0">
             {sortedProducts.length === 0

@@ -1,13 +1,13 @@
 # LunchGo
 
-LunchGo V1.0 là dự án web đồ ăn trưa. Kiến trúc tuần 1 chốt tại L08: React + fake API + dữ liệu local, chỉ public-user, không làm Admin. Các thay đổi runtime theo kiến trúc mới sẽ thực hiện từ L09.
+LunchGo V1.0 là dự án web đồ ăn trưa. Kiến trúc tuần 1 chốt tại L08: React + fake API + dữ liệu local, chỉ public-user, không làm Admin.
 
 ## Công nghệ
 
 - Frontend: ReactJS, TypeScript/TSX, Node.js, Redux, Hooks và Props/State.
 - Giao diện: Bootstrap, SCSS, HTML5/CSS3.
-- Dữ liệu: TheMealDB và DummyJSON Recipes. Giá demo được lưu nội bộ bằng VND; dữ liệu công thức không phải sản phẩm bán thực.
-- Redux hiện giữ state runtime. LocalStorage là định hướng lưu dữ liệu trong một origin, sẽ triển khai tại L12; không dùng để chia sẻ trạng thái giữa máy.
+- Dữ liệu demo: catalog `lunchgo-week1-v1` gồm 20 món seed dùng chung cho thực đơn và chi tiết. Các client TheMealDB và DummyJSON Recipes phục vụ việc nhập dữ liệu. Giá demo dùng VND.
+- Redux giữ state giỏ hàng. LocalStorage lưu giỏ và cache catalog theo trình duyệt và origin. Link chia sẻ mang đường dẫn và query, còn mỗi máy chạy cùng phiên bản catalog để đối chiếu kết quả.
 
 L02 sử dụng Vite để khởi tạo React/TypeScript; L05 sử dụng React Router `8.5.1` để điều hướng. L06 dùng Redux Toolkit `2.13.0`, React Redux `9.3.1`, Bootstrap `5.3.8` và Sass `1.107.1`. Không tự thêm backend hoặc dùng Supabase/MockAPI khi chưa được giảng viên cho phép.
 
@@ -27,14 +27,15 @@ git clone https://github.com/Thang-23130300/LunchGo.git
 cd LunchGo
 ```
 
-## Tiến độ đến L08
+## Tiến độ tuần 1
 
-Phần B đã có trên `main@0314a3c`. Working tree hiện chỉ giữ tài liệu L07 + L08, chưa áp dụng thay đổi runtime từ L09 trở đi.
+Phần B đã có trong PR #1. PR #2 đã đưa giao diện thực đơn và chi tiết món của D vào `main`.
 
 - [L07: đối chiếu L01–L06 và phần còn thiếu](docs/leader-test-results.md).
 - [L08: kiến trúc React + fake API + local, URL state và file sở hữu](docs/architecture-week1.md).
-
-Phần commit message bên dưới được giữ nguyên. Trợ lý không tự commit/push.
+- [L10: contract sản phẩm và URL](docs/product-contract.md).
+- [L11: tích hợp thực đơn và chi tiết món](docs/discovery-integration.md).
+- [L12–L14: biên bản kiểm thử, nghiệm thu và việc cần bàn giao](docs/week1-acceptance.md).
 
 ## Cài đặt và chạy 
 
@@ -43,7 +44,7 @@ Môi trường thực hiện: Node.js `24.21.0`, npm `11.19.0`. Yêu cầu Node.
 Phiên bản đã cài: React/ReactDOM `19.3.1`, TypeScript `7.0.2`, Vite `8.3.5`, plugin React `6.1.2`. `package-lock.json` lưu các phiên bản cụ thể để cài đặt nhất quán.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
@@ -53,19 +54,20 @@ Kiểm tra và build:
 
 ```sh
 npm run lint
+npm test
 npm run build
 npm run preview
 ```
 
-`build` kiểm tra TypeScript trước khi xuất vào `dist/`; `preview` phục vụ bản build tại URL được in trong terminal. Khi cài lại theo đúng `package-lock.json`, dùng `npm ci`.
+`npm ci` cài theo `package-lock.json`. `npm test` kiểm tra lưu và khôi phục giỏ, cache và trường hợp storage bị chặn. `build` kiểm tra TypeScript trước khi xuất vào `dist/`. `preview` chạy bản build tại URL được in trong terminal.
 
 Ứng dụng hiện chưa cần biến môi trường hoặc backend.
 
-## Store và giao diện (L06)
+## Store và giao diện
 
 - Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
 - Dùng `useAppDispatch` và `useAppSelector` từ `src/app/hooks.ts`; `RootState`/`AppDispatch` được suy ra từ store.
-- Cart slice: `src/features/cart/cartSlice.ts`, khởi tạo `{ items: [] }`, có action `clearCart()`. Mỗi item tạm gồm `productId` và `quantity`; model chung sẽ được thống nhất khi triển khai nghiệp vụ. Chưa thêm thao tác mua hàng hay LocalStorage.
+- Cart slice lưu `productId` và `quantity`. Store khôi phục giỏ từ LocalStorage khi mở app và lưu khi giỏ thay đổi. Dữ liệu lỗi hoặc sai phiên bản được khởi tạo lại. Giao diện thao tác mua hàng vẫn ở mốc placeholder.
 - SCSS entry: `src/styles/main.scss`, nạp Bootstrap và reset. Chỉnh biến màu tại `src/styles/_variables.scss`; Bootstrap và CSS variables `--lunchgo-*` dùng cùng bộ màu.
 
 ## Điều hướng 
@@ -77,9 +79,9 @@ npm run preview
 | `/product/:id` | Chi tiết món; nhận `id` từ URL |
 | `/cart` | Giỏ hàng |
 | `/checkout` | Thanh toán |
-| `/admin` | Mã cũ, sẽ gỡ ở L09 |
+| `*` | Trang 404 cho đường dẫn không tồn tại |
 
-Menu/Product đang dùng code B đã có trên main; cart/checkout còn là placeholder. Route và layout Admin cũ vẫn tồn tại ở mốc L08, sẽ gỡ khi làm L09 theo kiến trúc mới. URL không khớp hiển thị 404.
+`BrowserRouter` xử lý URL và nút Back/Forward của trình duyệt. Liên kết nội bộ dùng React Router. Cart/checkout còn là placeholder; `/admin` và các đường dẫn con trả về trang 404.
 
 Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
 
