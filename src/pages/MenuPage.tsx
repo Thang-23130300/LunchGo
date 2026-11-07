@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '@/app/store'
+import { addToCart } from '@/features/cart/cartSlice'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import { getCatalog } from '@/services/catalogService'
@@ -57,6 +60,7 @@ function buildSearch(params: MenuQuery): string {
 }
 
 function MenuPage() {
+  const dispatch = useDispatch<AppDispatch>()
   const [products, setProducts] = useState<LunchProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
@@ -258,6 +262,15 @@ function MenuPage() {
                   <p className="fw-bold text-danger mt-auto mb-3">
                     {formatPrice(product.price)}
                   </p>
+                  <button
+                    type="button"
+                    className="btn btn-primary mb-2"
+                    onClick={() => dispatch(addToCart(product.id))}
+                  >
+                    <i className="bi bi-cart-plus me-2"></i>
+                    Thêm vào giỏ hàng
+                  </button>
+
                   <Link
                     className="btn btn-outline-primary"
                     to={`/product/${encodeURIComponent(product.id)}`}

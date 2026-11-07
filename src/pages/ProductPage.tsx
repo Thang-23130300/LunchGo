@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '@/app/store'
+import { addToCart } from '@/features/cart/cartSlice'
 import { useLocation, useNavigate, useParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import { getCatalogProduct } from '@/services/catalogService'
@@ -36,6 +39,7 @@ function ShareButton({ productName }: ShareButtonProps) {
 }
 
 function ProductPage() {
+  const dispatch = useDispatch<AppDispatch>()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -130,6 +134,13 @@ function ProductPage() {
           <h1 className="fw-bold">{product.name}</h1>
 
           <p className="fs-4 fw-bold text-danger">{formatPrice(product.price)}</p>
+          <button
+            type="button"
+            className="btn btn-primary mt-2"
+            onClick={() => dispatch(addToCart(product.id))}
+          >
+            Thêm vào giỏ hàng
+          </button>
 
           <p className="text-secondary small">Nguồn dữ liệu: {product.source}</p>
 
