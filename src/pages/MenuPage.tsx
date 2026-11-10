@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
 import { addToCart } from '@/features/cart/cartSlice'
+import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { Link, useLocation, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
-import { getCatalog } from '@/services/catalogService'
 
 const ALL_CATEGORIES = 'Tất cả'
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
@@ -61,9 +62,9 @@ function buildSearch(params: MenuQuery): string {
 
 function MenuPage() {
   const dispatch = useDispatch<AppDispatch>()
-  const [products, setProducts] = useState<LunchProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [apiError, setApiError] = useState(false)
+  const { products, status } = useAppSelector(selectCatalog)
+  const loading = status === 'idle'
+  const apiError = status === 'error'
 
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -79,24 +80,6 @@ function MenuPage() {
   const page = readPositiveInteger(searchParams.get('page')) ?? 1
   const rawPageSize = readPositiveInteger(searchParams.get('pageSize')) ?? DEFAULT_PAGE_SIZE
   const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize) ? rawPageSize : DEFAULT_PAGE_SIZE
-
-  useEffect(() => {
-    let active = true
-
-    async function loadProducts() {
-      try {
-        const result = await getCatalog()
-        if (active) setProducts(result)
-      } catch {
-        if (active) setApiError(true)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadProducts()
-    return () => { active = false }
-  }, [])
 
   const categories = useMemo(
     () => [ALL_CATEGORIES, ...new Set(products.map((p) => p.category))],
