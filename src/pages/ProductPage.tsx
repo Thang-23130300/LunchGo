@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useDispatch } from 'react-redux'
+import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
 import { addToCart } from '@/features/cart/cartSlice'
+import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { useLocation, useNavigate, useParams } from 'react-router'
-import type { LunchProduct } from '@/models/product'
-import { getCatalogProduct } from '@/services/catalogService'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -43,9 +43,8 @@ function ProductPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const [product, setProduct] = useState<LunchProduct | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [apiError, setApiError] = useState(false)
+  const { products, status } = useAppSelector(selectCatalog)
+  const product = products.find((item) => item.id === id)
 
   const fromMenu: unknown = (location.state as { fromMenu?: unknown } | null)?.fromMenu
   const menuHref = typeof fromMenu === 'string' && (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
@@ -56,34 +55,7 @@ function ProductPage() {
     navigate(menuHref)
   }
 
-  useEffect(() => {
-    let active = true
-
-    async function loadProduct() {
-      setLoading(true)
-      setProduct(null)
-      setApiError(false)
-
-      if (!id) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        const result = await getCatalogProduct(id)
-        if (active) setProduct(result)
-      } catch {
-        if (active) setApiError(true)
-      } finally {
-        if (active) setLoading(false)
-      }
-    }
-
-    loadProduct()
-    return () => { active = false }
-  }, [id])
-
-  if (loading) {
+  if (status === 'idle') {
     return (
       <section className="container py-5">
         <p role="status" className="text-secondary">Đang tải thông tin món ăn...</p>
@@ -95,7 +67,7 @@ function ProductPage() {
     return (
       <section className="container py-5">
         <div className="alert alert-warning" role="alert">
-          {apiError
+          {status === 'error'
             ? 'Không thể tải thông tin món ăn. Vui lòng thử lại sau.'
             : 'Không tìm thấy món ăn này.'}
         </div>
