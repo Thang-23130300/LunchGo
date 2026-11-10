@@ -46,6 +46,7 @@ function ProductPage() {
   const [product, setProduct] = useState<LunchProduct | null>(null)
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   const fromMenu: unknown = (location.state as { fromMenu?: unknown } | null)?.fromMenu
   const menuHref = typeof fromMenu === 'string' && (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
@@ -81,7 +82,7 @@ function ProductPage() {
 
     loadProduct()
     return () => { active = false }
-  }, [id])
+  }, [id, retryCount])
 
   if (loading) {
     return (
@@ -99,7 +100,16 @@ function ProductPage() {
             ? 'Không thể tải thông tin món ăn. Vui lòng thử lại sau.'
             : 'Không tìm thấy món ăn này.'}
         </div>
-        <button className="btn btn-outline-primary" onClick={handleBack}>
+        {apiError && (
+          <button
+            type="button"
+            className="btn btn-warning btn-sm mb-3"
+            onClick={() => setRetryCount((c) => c + 1)}
+          >
+            Thử lại
+          </button>
+        )}
+        <button className="btn btn-outline-primary d-block" onClick={handleBack}>
           ← Quay lại thực đơn
         </button>
       </section>

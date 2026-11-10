@@ -64,6 +64,7 @@ function MenuPage() {
   const [products, setProducts] = useState<LunchProduct[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -82,6 +83,8 @@ function MenuPage() {
 
   useEffect(() => {
     let active = true
+    setLoading(true)
+    setApiError(false)
 
     async function loadProducts() {
       try {
@@ -96,7 +99,7 @@ function MenuPage() {
 
     loadProducts()
     return () => { active = false }
-  }, [])
+  }, [retryCount])
 
   const categories = useMemo(
     () => [ALL_CATEGORIES, ...new Set(products.map((p) => p.category))],
@@ -182,8 +185,15 @@ function MenuPage() {
       </div>
 
       {apiError && (
-        <div className="alert alert-warning" role="alert">
-          Không thể tải thực đơn. Vui lòng thử lại sau.
+        <div className="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2" role="alert">
+          <span>Không thể tải thực đơn. Vui lòng thử lại sau.</span>
+          <button
+            type="button"
+            className="btn btn-warning btn-sm"
+            onClick={() => setRetryCount((c) => c + 1)}
+          >
+            Thử lại
+          </button>
         </div>
       )}
 
