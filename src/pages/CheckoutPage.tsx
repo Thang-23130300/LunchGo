@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
-import { getCatalog } from '@/services/catalogService'
+import { selectCatalog } from '@/features/catalog/catalogSlice'
 import type { LunchProduct } from '@/models/product'
 import type { CustomerInfo, OrderDraft, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
@@ -13,9 +13,11 @@ function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
 }
 
-/** Validate cơ bản: 9–11 chữ số, có thể có khoảng trắng hoặc dấu gạch */
 function isValidPhone(value: string): boolean {
-  return /^[\d\s\-+]{9,15}$/.test(value.trim()) && value.replace(/\D/g, '').length >= 9
+  // Chỉ chấp nhận chữ số, khoảng trắng, dấu gạch, dấu +
+  // Tổng số chữ số phải từ 9 đến 11
+  const digits = value.replace(/\D/g, '')
+  return digits.length >= 9 && digits.length <= 11
 }
 
 type FormErrors = Partial<Record<keyof CustomerInfo, string>>
@@ -26,7 +28,7 @@ function validateForm(info: CustomerInfo): FormErrors {
   if (!info.phone.trim()) {
     errors.phone = 'Vui lòng nhập số điện thoại.'
   } else if (!isValidPhone(info.phone)) {
-    errors.phone = 'Số điện thoại không hợp lệ (cần ít nhất 9 chữ số).'
+    errors.phone = 'Số điện thoại không hợp lệ (cần 9–11 chữ số).'
   }
   if (!info.address.trim()) errors.address = 'Vui lòng nhập địa chỉ giao hàng.'
   return errors
@@ -34,7 +36,7 @@ function validateForm(info: CustomerInfo): FormErrors {
 
 const EMPTY_INFO: CustomerInfo = { name: '', phone: '', address: '', note: '' }
 
-// ─── sub-components ──────────────────────────────────────────────────────────
+// ─── OrderSummary ─────────────────────────────────────────────────────────────
 
 type OrderSummaryProps = {
   items: OrderDraftItem[]
@@ -53,90 +55,91 @@ function OrderSummary({
 }: OrderSummaryProps) {
   return (
     <div className="card">
-      <div className="card-header fw-semibold">Tóm tắt đơn</div>
+      <div className="card-body">
+        <h5 className="card-title mb-3">Tóm tắt đơn hàng</h5>
 
-      {items.length === 0 ? (
-        <div className="card-body text-secondary text-center py-4">
-          Chưa có món nào trong giỏ.
-        </div>
-      ) : (
-        <>
-          <ul className="list-group list-group-flush">
+        {items.length === 0 ? (
+          <p className="text-muted text-center py-3 mb-0">Chưa có món nào trong giỏ.</p>
+        ) : (
+          <>
             {items.map((item) => {
               const product = products.find((p) => p.id === item.productId)
               return (
-                <li key={item.productId} className="list-group-item py-3">
-                  <div className="d-flex gap-3 align-items-center">
-                    {/* Ảnh thumbnail */}
-                    <img
-                      src={product?.image ?? ''}
-                      alt={item.productName}
-                      style={{ width: 52, height: 52, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}
-                    />
-                    {/* Tên + giá */}
-                    <div className="flex-grow-1 min-w-0">
-                      <div className="fw-medium text-truncate">{item.productName}</div>
-                      <small className="text-secondary">
-                        {formatPrice(item.unitPrice)} × {item.quantity}
-                        {' = '}
-                        <span className="fw-semibold text-danger">{formatPrice(item.lineTotal)}</span>
-                      </small>
-                    </div>
-                    {/* Nút số lượng */}
-                    <div className="d-flex align-items-center gap-1" style={{ flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm px-2 py-0"
-                        style={{ lineHeight: '1.6' }}
-                        onClick={() => item.quantity === 1 ? onRemove(item.productId) : onDecrease(item.productId)}
-                        aria-label={item.quantity === 1 ? `Xóa ${item.productName}` : `Giảm số lượng ${item.productName}`}
-                      >
-                        {item.quantity === 1 ? '🗑' : '−'}
-                      </button>
-                      <span
-                        className="text-center fw-semibold"
-                        style={{ minWidth: 24 }}
-                        aria-label={`Số lượng: ${item.quantity}`}
-                      >
-                        {item.quantity}
-                      </span>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm px-2 py-0"
-                        style={{ lineHeight: '1.6' }}
-                        onClick={() => onIncrease(item.productId)}
-                        aria-label={`Tăng số lượng ${item.productName}`}
-                      >
-                        +
-                      </button>
+                <div key={item.productId} className="card mb-3">
+                  <div className="card-body py-2 px-3">
+                    <div className="row align-items-center g-2">
+                      <div className="col-3">
+                        <img
+                          src={product?.image ?? ''}
+                          alt={item.productName}
+                          className="img-fluid rounded"
+                        />
+                      </div>
+                      <div className="col-9">
+                        <div className="d-flex justify-content-between gap-2 align-items-start">
+                          <div>
+                            <p className="mb-1 fw-semibold small">{item.productName}</p>
+                            <p className="text-primary fw-bold mb-1 small">
+                              {formatPrice(item.unitPrice)}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-danger align-self-start"
+                            onClick={() => onRemove(item.productId)}
+                            aria-label={`Xóa ${item.productName}`}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            disabled={item.quantity <= 1}
+                            onClick={() => onDecrease(item.productId)}
+                          >
+                            -
+                          </button>
+                          <span className="fw-bold">{item.quantity}</span>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => onIncrease(item.productId)}
+                          >
+                            +
+                          </button>
+                          <small className="text-muted ms-auto">
+                            = <strong>{formatPrice(item.lineTotal)}</strong>
+                          </small>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </li>
+                </div>
               )
             })}
-          </ul>
 
-          <div className="card-body pt-2 pb-0">
-            <div className="d-flex justify-content-between text-secondary mb-1">
+            <div className="d-flex justify-content-between mb-2">
               <span>Tạm tính</span>
-              <span>{formatPrice(total)}</span>
+              <strong>{formatPrice(total)}</strong>
             </div>
-            <div className="d-flex justify-content-between text-secondary mb-3">
+            <div className="d-flex justify-content-between mb-3 text-muted">
               <span>Phí giao hàng</span>
               <span>0đ <small>(demo)</small></span>
             </div>
-            <div className="d-flex justify-content-between fw-bold fs-5 border-top pt-3 mb-3">
-              <span>Tổng cộng</span>
-              <span className="text-success">{formatPrice(total)}</span>
-            </div>
-          </div>
 
-          <div className="card-footer bg-transparent border-0 pb-3 px-3">
+            <hr />
+
+            <div className="d-flex justify-content-between mb-3">
+              <strong>Tổng cộng</strong>
+              <strong className="text-primary fs-5">{formatPrice(total)}</strong>
+            </div>
+
             <button
               type="submit"
               form="checkout-form"
-              className="btn btn-lg w-100 fw-semibold text-white"
-              style={{ backgroundColor: '#2d6a4f', borderColor: '#2d6a4f', borderRadius: 8 }}
+              className="btn btn-primary w-100"
               disabled={submitting || isEmpty}
               aria-busy={submitting}
             >
@@ -146,15 +149,17 @@ function OrderSummary({
                   Đang xử lý...
                 </>
               ) : (
-                'Xác nhận đơn'
+                'Xác nhận đơn hàng'
               )}
             </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
+
+// ─── FormField ────────────────────────────────────────────────────────────────
 
 type FieldProps = {
   id: string
@@ -210,7 +215,7 @@ function FormField({
   )
 }
 
-// ─── OrderResult — hiển thị sau khi đặt hàng thành công ──────────────────────
+// ─── OrderResult ──────────────────────────────────────────────────────────────
 
 type OrderResultProps = {
   order: OrderDraft
@@ -223,17 +228,18 @@ function OrderResult({ order, onNewOrder }: OrderResultProps) {
       <div className="text-center mb-4">
         <div className="display-1" aria-hidden="true">✅</div>
         <h1 className="fw-bold mt-2">Đặt hàng demo thành công!</h1>
-        <p className="text-secondary">
+        <p className="text-muted">
           Đây là đơn hàng <strong>minh họa</strong> — không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
         </p>
       </div>
 
       <div className="card mx-auto" style={{ maxWidth: 560 }}>
-        <div className="card-header fw-semibold d-flex justify-content-between">
-          <span>Mã đơn</span>
-          <span className="text-primary font-monospace">{order.orderId}</span>
-        </div>
         <div className="card-body">
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="card-title mb-0">Chi tiết đơn hàng</h5>
+            <span className="text-primary fw-semibold font-monospace small">{order.orderId}</span>
+          </div>
+
           <dl className="row mb-3">
             <dt className="col-5">Họ và tên</dt>
             <dd className="col-7">{order.customer.name}</dd>
@@ -265,7 +271,7 @@ function OrderResult({ order, onNewOrder }: OrderResultProps) {
 
           <div className="d-flex justify-content-between fw-bold fs-5 border-top pt-2">
             <span>Tổng cộng</span>
-            <span className="text-danger">{formatPrice(order.total)}</span>
+            <span className="text-primary">{formatPrice(order.total)}</span>
           </div>
         </div>
       </div>
@@ -292,9 +298,7 @@ function CheckoutPage() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const cartItems = useAppSelector((state) => state.cart.items)
-
-  const [products, setProducts] = useState<LunchProduct[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(true)
+  const { products, status: catalogStatus } = useAppSelector(selectCatalog)
 
   const [info, setInfo] = useState<CustomerInfo>(EMPTY_INFO)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -302,21 +306,8 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [confirmedOrder, setConfirmedOrder] = useState<OrderDraft | null>(null)
 
-  // Chặn submit lặp khi bấm đúp
   const submittingRef = useRef(false)
 
-  // Tải catalog để lấy tên + giá sản phẩm
-  useEffect(() => {
-    let active = true
-    getCatalog().then((result) => {
-      if (active) { setProducts(result); setCatalogLoading(false) }
-    }).catch(() => {
-      if (active) setCatalogLoading(false)
-    })
-    return () => { active = false }
-  }, [])
-
-  // Tính order items từ Redux cart + catalog
   const orderItems = useMemo<OrderDraftItem[]>(() => {
     return cartItems.flatMap((cartItem) => {
       const product = products.find((p) => p.id === cartItem.productId)
@@ -338,20 +329,20 @@ function CheckoutPage() {
 
   const isEmpty = cartItems.length === 0
 
-  // Validate theo field khi đã touched
-  useEffect(() => {
-    if (Object.keys(touched).length === 0) return
+  const activeErrors = useMemo<FormErrors>(() => {
+    if (Object.keys(touched).length === 0) return {}
     const newErrors = validateForm(info)
-    // Chỉ hiện lỗi cho field đã touched
     const filtered: FormErrors = {}
     for (const key of Object.keys(touched) as Array<keyof CustomerInfo>) {
       if (newErrors[key]) filtered[key] = newErrors[key]
     }
-    setErrors(filtered)
+    return filtered
   }, [info, touched])
 
   function handleChange(field: keyof CustomerInfo, value: string) {
     setInfo((prev) => ({ ...prev, [field]: value }))
+    // Xóa lỗi submit cũ khi người dùng bắt đầu sửa field
+    setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
   function handleBlur(field: keyof CustomerInfo) {
@@ -360,16 +351,11 @@ function CheckoutPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-
-    // Chặn đặt hàng khi giỏ trống
     if (isEmpty) return
-
-    // Chặn submit lặp
     if (submittingRef.current) return
     submittingRef.current = true
     setSubmitting(true)
 
-    // Validate toàn bộ form
     const allTouched: Partial<Record<keyof CustomerInfo, boolean>> = {
       name: true, phone: true, address: true,
     }
@@ -382,7 +368,6 @@ function CheckoutPage() {
       return
     }
 
-    // Mô phỏng xử lý đơn hàng (async demo)
     await new Promise<void>((resolve) => setTimeout(resolve, 600))
 
     const order: OrderDraft = {
@@ -399,7 +384,6 @@ function CheckoutPage() {
       createdAt: new Date().toISOString(),
     }
 
-    // Xóa giỏ CHỈ KHI xác nhận thành công
     dispatch(clearCart())
     setConfirmedOrder(order)
     submittingRef.current = false
@@ -414,47 +398,51 @@ function CheckoutPage() {
     navigate('/menu')
   }
 
-  // ── Hiển thị kết quả đơn hàng ───────────────────────────────────────────
+  // ── Kết quả đơn hàng ───────────────────────────────────────────────────────
   if (confirmedOrder) {
     return <OrderResult order={confirmedOrder} onNewOrder={handleNewOrder} />
   }
 
-  // ── Giỏ trống ────────────────────────────────────────────────────────────
-  if (!catalogLoading && isEmpty) {
+  // ── Catalog đang tải ───────────────────────────────────────────────────────
+  if (catalogStatus === 'idle') {
+    return (
+      <section className="container py-5 text-center">
+        <p role="status" className="text-muted">Đang tải thông tin đơn hàng...</p>
+      </section>
+    )
+  }
+
+  // ── Giỏ trống ──────────────────────────────────────────────────────────────
+  if (isEmpty) {
     return (
       <section className="container py-5 text-center" aria-label="Giỏ hàng trống">
-        <div className="display-1" aria-hidden="true">🛒</div>
-        <h1 className="fw-bold mt-2">Giỏ hàng trống</h1>
-        <p className="text-secondary">
-          Bạn chưa có món nào trong giỏ. Hãy chọn món trước khi thanh toán.
-        </p>
-        <Link to="/menu" className="btn btn-primary mt-2">
+        <h1 className="mb-3">Thanh toán</h1>
+        <p className="text-muted">Giỏ hàng của bạn đang trống.</p>
+        <Link to="/menu" className="btn btn-primary mt-3">
           Xem thực đơn
         </Link>
       </section>
     )
   }
 
-  // ── Form checkout ────────────────────────────────────────────────────────
+  // ── Form checkout ──────────────────────────────────────────────────────────
   return (
     <section className="container py-4">
-      <h1 className="fw-bold mb-1">Thanh toán</h1>
-      <p className="text-secondary mb-4">
-        Điền thông tin giao hàng và xác nhận đơn hàng demo.
-      </p>
+      <h1 className="mb-1">Thanh toán</h1>
+      <p className="text-muted mb-4">Điền thông tin giao hàng và xác nhận đơn hàng demo.</p>
 
       <div className="row g-4">
-        {/* Cột trái: form */}
-        <div className="col-12 col-lg-7">
+        {/* Cột trái: form thông tin */}
+        <div className="col-lg-8">
           <form id="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Biểu mẫu thanh toán">
-            <h2 className="h5 fw-semibold mb-3">Thông tin giao hàng</h2>
+            <h5 className="mb-3">Thông tin giao hàng</h5>
 
             <FormField
               id="checkout-name"
               label="Họ và tên"
               required
               value={info.name}
-              error={errors.name}
+              error={errors.name ?? activeErrors.name}
               autoComplete="name"
               placeholder="Nguyễn Văn A"
               onChange={(v) => handleChange('name', v)}
@@ -467,7 +455,7 @@ function CheckoutPage() {
               type="tel"
               inputMode="tel"
               value={info.phone}
-              error={errors.phone}
+              error={errors.phone ?? activeErrors.phone}
               autoComplete="tel"
               placeholder="0901 234 567"
               onChange={(v) => handleChange('phone', v)}
@@ -478,7 +466,7 @@ function CheckoutPage() {
               label="Địa chỉ giao hàng"
               required
               value={info.address}
-              error={errors.address}
+              error={errors.address ?? activeErrors.address}
               autoComplete="street-address"
               placeholder="Số nhà, đường, phường, quận"
               onChange={(v) => handleChange('address', v)}
@@ -495,46 +483,41 @@ function CheckoutPage() {
               onBlur={() => handleBlur('note')}
             />
 
-            <div className="mb-4">
-              <h2 className="h5 fw-semibold mb-2">Thanh toán</h2>
-              <div
-                className="form-check p-3 border rounded"
-                style={{ borderColor: '#2d6a4f', backgroundColor: '#f0f7f4' }}
-              >
-                <input
-                  className="form-check-input"
-                  type="radio"
-                  id="payment-cod"
-                  name="payment"
-                  value="cod"
-                  defaultChecked
-                  readOnly
-                />
-                <label className="form-check-label" htmlFor="payment-cod">
-                  <span className="fw-semibold">Thanh toán khi nhận hàng (COD)</span>
-                  <span className="d-block text-secondary small">Mô phỏng, không thu tiền thật</span>
-                </label>
+            <h5 className="mb-2">Phương thức thanh toán</h5>
+            <div className="card mb-3">
+              <div className="card-body">
+                <div className="form-check">
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    id="payment-cod"
+                    name="payment"
+                    value="cod"
+                    defaultChecked
+                    readOnly
+                  />
+                  <label className="form-check-label" htmlFor="payment-cod">
+                    <span className="fw-semibold">Thanh toán khi nhận hàng (COD)</span>
+                    <span className="d-block text-muted small">Mô phỏng, không thu tiền thật</span>
+                  </label>
+                </div>
               </div>
             </div>
           </form>
         </div>
 
         {/* Cột phải: tóm tắt đơn */}
-        <div className="col-12 col-lg-5">
-          {catalogLoading ? (
-            <p className="text-secondary" role="status">Đang tải thông tin đơn hàng...</p>
-          ) : (
-            <OrderSummary
-              items={orderItems}
-              products={products}
-              total={total}
-              submitting={submitting}
-              isEmpty={isEmpty}
-              onIncrease={(id) => dispatch(increaseQuantity(id))}
-              onDecrease={(id) => dispatch(decreaseQuantity(id))}
-              onRemove={(id) => dispatch(removeFromCart(id))}
-            />
-          )}
+        <div className="col-lg-4">
+          <OrderSummary
+            items={orderItems}
+            products={products}
+            total={total}
+            submitting={submitting}
+            isEmpty={isEmpty}
+            onIncrease={(id) => dispatch(increaseQuantity(id))}
+            onDecrease={(id) => dispatch(decreaseQuantity(id))}
+            onRemove={(id) => dispatch(removeFromCart(id))}
+          />
         </div>
       </div>
     </section>
