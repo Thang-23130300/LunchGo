@@ -81,7 +81,7 @@ npm run preview
 | `/checkout` | Thanh toán |
 | `*` | Trang 404 cho đường dẫn không tồn tại |
 
-`BrowserRouter` xử lý URL và nút Back/Forward của trình duyệt. Liên kết nội bộ dùng React Router. Cart/checkout còn là placeholder; `/admin` và các đường dẫn con trả về trang 404.
+React Router xử lý URL và nút Back/Forward. Loader ở route chung nạp catalog vào Redux để Menu và Chi tiết dùng cùng dữ liệu. Cart/checkout còn là placeholder. [Hợp đồng dữ liệu tuần 2](docs/week2-data-contract.md).
 
 Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
 
