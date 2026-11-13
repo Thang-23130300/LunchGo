@@ -17,29 +17,33 @@ function SiteHeader({ menuHref, cartQuantity }: SiteHeaderProps) {
 
   return (
     <header className="site-header">
-      <Link className="site-brand" to="/" state={navigationState}>
-        LunchGo
-      </Link>
-      <nav className="site-nav" aria-label="Điều hướng chính">
-        {links.map(({ to, label }) => {
-          const showCartQuantity = to === '/cart' && cartQuantity > 0
-
-          return (
+      <div className="site-container site-header__inner">
+        <Link className="site-brand" to="/" state={navigationState} aria-label="LunchGo">
+          <span className="site-brand__mark" aria-hidden="true">↗</span>
+          <span>Lunch <span className="site-brand__accent">Go.</span></span>
+        </Link>
+        <nav className="site-nav" aria-label="Điều hướng chính">
+          {links.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to === '/menu' ? menuHref : to}
               state={navigationState}
-              aria-label={showCartQuantity ? `${label} (${cartQuantity} món)` : undefined}
               end
             >
               {label}
-              {showCartQuantity && (
-                <span className="badge text-bg-primary ms-1" aria-hidden="true">{cartQuantity}</span>
-              )}
             </NavLink>
-          )
-        })}
-      </nav>
+          ))}
+        </nav>
+        <Link
+          className="site-cart-link"
+          to="/cart"
+          state={navigationState}
+          aria-label={cartQuantity > 0 ? `Giỏ hàng (${cartQuantity} món)` : undefined}
+        >
+          <span aria-hidden="true">▣</span> Giỏ hàng
+          {cartQuantity > 0 && <span className="site-cart-link__quantity" aria-hidden="true">{cartQuantity}</span>}
+        </Link>
+      </div>
     </header>
   )
 }

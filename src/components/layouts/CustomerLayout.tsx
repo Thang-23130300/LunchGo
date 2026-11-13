@@ -5,6 +5,7 @@ import SiteHeader from '@/components/SiteHeader'
 
 function CustomerLayout() {
   const location = useLocation()
+  const isHome = useMatch('/') !== null
   const isMenu = useMatch('/menu') !== null
   const cartQuantity = useAppSelector((state) =>
     state.cart.items.reduce((quantity, item) => quantity + item.quantity, 0),
@@ -19,10 +20,10 @@ function CustomerLayout() {
   return (
     <div className="site-shell">
       <SiteHeader menuHref={menuHref} cartQuantity={cartQuantity} />
-      <main className="page-content">
+      <main className={isHome ? 'page-content' : 'page-content page-content--inner'}>
         <Outlet context={menuHref} />
       </main>
-      <SiteFooter />
+      <SiteFooter menuHref={menuHref} />
     </div>
   )
 }
