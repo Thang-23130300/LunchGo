@@ -59,7 +59,7 @@ npm run build
 npm run preview
 ```
 
-`npm ci` cài theo `package-lock.json`. `npm test` kiểm tra lưu và khôi phục giỏ, cache và trường hợp storage bị chặn. `build` kiểm tra TypeScript trước khi xuất vào `dist/`. `preview` chạy bản build tại URL được in trong terminal.
+`npm ci` cài theo `package-lock.json`. `npm test` kiểm tra lưu giỏ, cache, loader catalog và tổng tiền dùng chung. `build` kiểm tra TypeScript trước khi xuất vào `dist/`. `preview` chạy bản build tại URL được in trong terminal.
 
 Ứng dụng hiện chưa cần biến môi trường hoặc backend.
 
@@ -67,7 +67,7 @@ npm run preview
 
 - Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
 - Dùng `useAppDispatch` và `useAppSelector` từ `src/app/hooks.ts`; `RootState`/`AppDispatch` được suy ra từ store.
-- Cart slice lưu `productId` và `quantity`. Store khôi phục giỏ từ LocalStorage khi mở app và lưu khi giỏ thay đổi. Dữ liệu lỗi hoặc sai phiên bản được khởi tạo lại. Giao diện thao tác mua hàng vẫn ở mốc placeholder.
+- Cart slice lưu `productId` và `quantity`. Store khôi phục giỏ từ LocalStorage khi mở app và lưu khi giỏ thay đổi. Dữ liệu lỗi hoặc sai phiên bản được khởi tạo lại. Giỏ và checkout dùng chung cách tính tiền từ catalog Redux.
 - SCSS entry: `src/styles/main.scss`, nạp Bootstrap và reset. Chỉnh biến màu tại `src/styles/_variables.scss`; Bootstrap và CSS variables `--lunchgo-*` dùng cùng bộ màu.
 
 ## Điều hướng 
@@ -81,9 +81,22 @@ npm run preview
 | `/checkout` | Thanh toán |
 | `*` | Trang 404 cho đường dẫn không tồn tại |
 
-React Router xử lý URL và nút Back/Forward. Loader ở route chung nạp catalog vào Redux để Menu và Chi tiết dùng cùng dữ liệu. Cart/checkout còn là placeholder. [Hợp đồng dữ liệu tuần 2](docs/week2-data-contract.md).
+React Router giữ bộ lọc thực đơn khi tải lại và dùng Back/Forward. Nút quay về Thực đơn từ giỏ hoặc checkout giữ bộ lọc đang dùng.
 
 Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` để mở hoặc refresh URL con. Vite dev/preview hỗ trợ việc này khi chạy tại máy.
+
+## Tuần 2
+
+- **Dữ liệu.** Router loader nạp 20 món demo vào Redux. `CartItem` lưu `productId` khớp `LunchProduct.id` và `quantity`. Các action giỏ gồm `addToCart`, `increaseQuantity`, `decreaseQuantity`, `removeFromCart` và `clearCart`. `selectCartSummary` tính tổng từ giá và số lượng cho cả giỏ lẫn checkout. Giỏ giữ định dạng LocalStorage phiên bản 1.
+- **Checkout.** `OrderDraft` dùng họ tên, điện thoại, địa chỉ, ghi chú tùy chọn và COD mô phỏng. Giỏ trống, món không khả dụng hoặc thông tin sai sẽ chặn xác nhận. Khi thành công, trang hiển thị `ConfirmedOrder` và xóa giỏ một lần.
+- **Tích hợp và kiểm thử.** Bản nghiệm thu dựa trên `main` tại `e42a96b`, gồm catalog [PR #6](https://github.com/Thang-23130300/LunchGo/pull/6), giỏ [PR #7](https://github.com/Thang-23130300/LunchGo/pull/7) và checkout [PR #9](https://github.com/Thang-23130300/LunchGo/pull/9). Lint, build và 8/8 test đạt. Đã kiểm tra thêm/sửa/xóa giỏ, khôi phục giỏ qua F5 và tab mới, tổng tiền, kiểm tra form, bấm đúp xác nhận và Back/Forward. [Ảnh giỏ được khôi phục](docs/evidence/week2-cart-restored.jpg) · [Ảnh xác nhận đơn](docs/evidence/week2-order-confirmed.jpg)
+- **Còn mở.** Nối API qua `CatalogSource` khi có endpoint và schema. Kiểm tra chia sẻ URL trên thiết bị thứ hai vẫn theo dõi ở tuần 1.
+
+### Demo tuần 2
+
+1. Mở `/menu`, tìm `phở`, thêm Phở bò hai lần và Phở gà một lần. Mở **Giỏ hàng** để xem số lượng và tổng `130.000đ`.
+2. Bấm **Tiến hành thanh toán**. Dùng dữ liệu thử như tên `Khách Demo`, số `0901 234 567` và địa chỉ `Địa chỉ demo`. Xác nhận đơn bằng COD mô phỏng.
+3. Kiểm tra mã đơn, tổng tiền và số món trong giỏ. Giỏ được xóa khi xác nhận thành công. F5 ở trang kết quả sẽ về màn hình giỏ trống vì kết quả chỉ giữ trong phiên hiện tại.
 
 ## Cấu trúc source 
 
