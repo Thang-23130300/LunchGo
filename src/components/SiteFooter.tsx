@@ -19,11 +19,13 @@ function SiteFooter({ menuHref }: { menuHref: string }) {
             <h2 id="footer-discover">Khám phá</h2>
             <Link to="/" state={navigationState}>Trang chủ</Link>
             <Link to={menuHref}>Thực đơn</Link>
+            <Link to="/#mon-goi-y" state={navigationState}>Chi tiết món</Link>
           </nav>
           <nav className="site-footer__group" aria-labelledby="footer-order">
             <h2 id="footer-order">Đặt món</h2>
             <Link to="/cart" state={navigationState}>Giỏ hàng</Link>
             <Link to="/checkout" state={navigationState}>Thanh toán COD</Link>
+            <Link to="/#cach-dat-mon" state={navigationState}>Hướng dẫn đặt món</Link>
           </nav>
           <div className="site-footer__group">
             <h2>Về LunchGo</h2>
