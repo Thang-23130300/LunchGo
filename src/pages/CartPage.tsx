@@ -1,6 +1,5 @@
 
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useOutletContext, useRevalidator } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import {
   increaseQuantity,
@@ -8,8 +7,8 @@ import {
   removeFromCart,
   clearCart,
 } from '@/features/cart/cartSlice'
-import { getCatalog } from '@/services/catalogService'
-import type { LunchProduct } from '@/models/product'
+import { selectCartSummary } from '@/features/cart/cartSummary'
+import { selectCatalog } from '@/features/catalog/catalogSlice'
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -17,58 +16,12 @@ function formatPrice(price: number) {
 
 function CartPage() {
   const dispatch = useAppDispatch()
-  const cartItems = useAppSelector((state) => state.cart.items)
+  const { lines: cartDetails, totalQuantity, total: totalPrice, canCheckout } = useAppSelector(selectCartSummary)
+  const { status } = useAppSelector(selectCatalog)
+  const { state: revalidationState, revalidate } = useRevalidator()
+  const menuHref = useOutletContext<string>()
 
-  const [products, setProducts] = useState<LunchProduct[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadProducts() {
-      try {
-        const data = await getCatalog()
-
-        if (isMounted) {
-          setProducts(data)
-          setError('')
-        }
-      } catch {
-        if (isMounted) {
-          setError('Không thể tải danh sách sản phẩm.')
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    loadProducts()
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const cartDetails = cartItems.map((item) => ({
-    ...item,
-    product: products.find((product) => product.id === item.productId),
-  }))
-
-  const totalQuantity = cartItems.reduce(
-    (total, item) => total + item.quantity,
-    0
-  )
-
-  const totalPrice = cartDetails.reduce(
-    (total, item) =>
-      total + (item.product ? item.product.price * item.quantity : 0),
-    0
-  )
-
-  if (loading) {
+  if (status === 'idle') {
     return (
       <section className="container py-4">
         <h1>Giỏ hàng</h1>
@@ -77,15 +30,16 @@ function CartPage() {
     )
   }
 
-  if (error) {
+  if (status === 'error') {
     return (
       <section className="container py-4">
         <h1>Giỏ hàng</h1>
-        <p className="text-danger">{error}</p>
+        <p className="text-danger" role="alert">Không thể tải danh sách sản phẩm.</p>
         <button
           type="button"
           className="btn btn-primary"
-          onClick={() => window.location.reload()}
+          onClick={() => void revalidate()}
+          disabled={revalidationState === 'loading'}
         >
           Thử lại
         </button>
@@ -93,12 +47,12 @@ function CartPage() {
     )
   }
 
-  if (cartItems.length === 0) {
+  if (cartDetails.length === 0) {
     return (
       <section className="container py-5 text-center">
         <h1 className="mb-3">Giỏ hàng</h1>
         <p className="text-muted">Giỏ hàng của bạn đang trống.</p>
-        <Link to="/menu" className="btn btn-primary mt-3">
+        <Link to={menuHref} className="btn btn-primary mt-3">
           Tiếp tục mua hàng
         </Link>
       </section>
@@ -132,7 +86,7 @@ function CartPage() {
               className="card mb-3"
             >
               <div className="card-body">
-                {item.product ? (
+                {item.product && item.lineTotal !== null ? (
                   <div className="row align-items-center g-3">
                     <div className="col-4 col-md-3">
                       <img
@@ -194,9 +148,7 @@ function CartPage() {
                       <p className="mt-2 mb-0">
                         Thành tiền:{' '}
                         <strong>
-                          {formatPrice(
-                            item.product.price * item.quantity
-                          )}
+                          {formatPrice(item.lineTotal)}
                         </strong>
                       </p>
                     </div>
@@ -205,7 +157,7 @@ function CartPage() {
                   <div className="d-flex justify-content-between align-items-center">
                     <div>
                       <p className="mb-1 fw-bold">
-                        Sản phẩm không còn tồn tại
+                        Sản phẩm không khả dụng
                       </p>
                       <small className="text-muted">
                         Mã sản phẩm: {item.productId}
@@ -227,7 +179,7 @@ function CartPage() {
             </div>
           ))}
 
-          <Link to="/menu" className="btn btn-outline-primary">
+          <Link to={menuHref} className="btn btn-outline-primary">
             Tiếp tục mua hàng
           </Link>
         </div>
@@ -258,12 +210,13 @@ function CartPage() {
                 </strong>
               </div>
 
-              <Link
-                to="/checkout"
-                className="btn btn-primary w-100"
-              >
-                Tiến hành thanh toán
-              </Link>
+              {canCheckout ? (
+                <Link to="/checkout" state={{ fromMenu: menuHref }} className="btn btn-primary w-100">
+                  Tiến hành thanh toán
+                </Link>
+              ) : (
+                <p className="text-danger mb-0" role="alert">Hãy xóa món không khả dụng để thanh toán.</p>
+              )}
             </div>
           </div>
         </div>

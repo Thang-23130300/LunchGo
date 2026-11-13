@@ -4,7 +4,7 @@ import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
 import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import { Link, useLocation, useSearchParams } from 'react-router'
+import { Link, useLocation, useRevalidator, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 
 const ALL_CATEGORIES = 'Tất cả'
@@ -65,6 +65,7 @@ function MenuPage() {
   const { products, status } = useAppSelector(selectCatalog)
   const loading = status === 'idle'
   const apiError = status === 'error'
+  const { state: revalidationState, revalidate } = useRevalidator()
 
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -166,7 +167,10 @@ function MenuPage() {
 
       {apiError && (
         <div className="alert alert-warning" role="alert">
-          Không thể tải thực đơn. Vui lòng thử lại sau.
+          <p>Không thể tải thực đơn.</p>
+          <button type="button" className="btn btn-outline-primary" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+            Thử lại
+          </button>
         </div>
       )}
 
