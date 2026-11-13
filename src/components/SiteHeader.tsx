@@ -7,18 +7,38 @@ const links = [
   { to: '/checkout', label: 'Thanh toán' },
 ]
 
-function SiteHeader() {
+type SiteHeaderProps = {
+  menuHref: string
+  cartQuantity: number
+}
+
+function SiteHeader({ menuHref, cartQuantity }: SiteHeaderProps) {
+  const navigationState = { fromMenu: menuHref }
+
   return (
     <header className="site-header">
-      <Link className="site-brand" to="/">
+      <Link className="site-brand" to="/" state={navigationState}>
         LunchGo
       </Link>
       <nav className="site-nav" aria-label="Điều hướng chính">
-        {links.map(({ to, label }) => (
-          <NavLink key={to} to={to} end>
-            {label}
-          </NavLink>
-        ))}
+        {links.map(({ to, label }) => {
+          const showCartQuantity = to === '/cart' && cartQuantity > 0
+
+          return (
+            <NavLink
+              key={to}
+              to={to === '/menu' ? menuHref : to}
+              state={navigationState}
+              aria-label={showCartQuantity ? `${label} (${cartQuantity} món)` : undefined}
+              end
+            >
+              {label}
+              {showCartQuantity && (
+                <span className="badge text-bg-primary ms-1" aria-hidden="true">{cartQuantity}</span>
+              )}
+            </NavLink>
+          )
+        })}
       </nav>
     </header>
   )

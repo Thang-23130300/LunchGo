@@ -4,7 +4,7 @@ import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
 import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import { useLocation, useNavigate, useParams } from 'react-router'
+import { useLocation, useNavigate, useParams, useRevalidator } from 'react-router'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -44,6 +44,7 @@ function ProductPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { products, status } = useAppSelector(selectCatalog)
+  const { state: revalidationState, revalidate } = useRevalidator()
   const product = products.find((item) => item.id === id)
 
   const fromMenu: unknown = (location.state as { fromMenu?: unknown } | null)?.fromMenu
@@ -68,9 +69,14 @@ function ProductPage() {
       <section className="container py-5">
         <div className="alert alert-warning" role="alert">
           {status === 'error'
-            ? 'Không thể tải thông tin món ăn. Vui lòng thử lại sau.'
+            ? 'Không thể tải thông tin món ăn.'
             : 'Không tìm thấy món ăn này.'}
         </div>
+        {status === 'error' && (
+          <button type="button" className="btn btn-primary me-2" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+            Thử lại
+          </button>
+        )}
         <button className="btn btn-outline-primary" onClick={handleBack}>
           ← Quay lại thực đơn
         </button>

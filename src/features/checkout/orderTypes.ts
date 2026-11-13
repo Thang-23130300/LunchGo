@@ -1,21 +1,6 @@
-/**
- * W2-D01 — Contract dữ liệu checkout
- *
- * D chỉ ĐỌC cart từ Redux (CartItem từ cartSlice của B).
- * D KHÔNG tạo Redux slice riêng cho cart.
- * Tổng tiền được tính tại render từ CartItem[] + LunchProduct[].
- */
+import type { OrderDraft } from '@/models/order'
 
-export interface CustomerInfo {
-  /** Họ và tên — bắt buộc */
-  name: string
-  /** Số điện thoại — bắt buộc, tối thiểu 9–11 chữ số */
-  phone: string
-  /** Địa chỉ giao hàng — bắt buộc */
-  address: string
-  /** Ghi chú thêm — không bắt buộc */
-  note: string
-}
+export type CustomerInfo = Required<Omit<OrderDraft, 'paymentMethod'>>
 
 export interface OrderDraftItem {
   productId: string
@@ -31,15 +16,15 @@ export interface OrderDraftItem {
  * Đơn hàng demo — chỉ lưu local, không gửi server, không thu tiền thật.
  * Phương thức thanh toán cố định là COD mô phỏng.
  */
-export interface OrderDraft {
+export interface ConfirmedOrder {
   /** ID đơn demo — tạo tại client, dạng "ORD-<timestamp>-<4 chữ số ngẫu nhiên>" */
   orderId: string
-  customer: CustomerInfo
+  customer: Omit<OrderDraft, 'paymentMethod'>
   items: OrderDraftItem[]
   /** Tổng tiền = Σ lineTotal (VNĐ, tính tại thời điểm xác nhận) */
   total: number
   /** Phương thức thanh toán demo — luôn là 'cod' */
-  paymentMethod: 'cod'
+  paymentMethod: OrderDraft['paymentMethod']
   /** Thời điểm tạo đơn (ISO string) */
   createdAt: string
 }
