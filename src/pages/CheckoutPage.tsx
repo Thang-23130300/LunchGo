@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useOutletContext, useRevalidator } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
+import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import type { LunchProduct } from '@/models/product'
-import type { CustomerInfo, OrderDraft, OrderDraftItem } from '@/features/checkout/orderTypes'
+import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -17,14 +18,14 @@ function isValidPhone(value: string): boolean {
   // Chỉ chấp nhận chữ số, khoảng trắng, dấu gạch, dấu +
   // Tổng số chữ số phải từ 9 đến 11
   const digits = value.replace(/\D/g, '')
-  return digits.length >= 9 && digits.length <= 11
+  return /^\+?[\d -]+$/.test(value.trim()) && digits.length >= 9 && digits.length <= 11
 }
 
 type FormErrors = Partial<Record<keyof CustomerInfo, string>>
 
 function validateForm(info: CustomerInfo): FormErrors {
   const errors: FormErrors = {}
-  if (!info.name.trim()) errors.name = 'Vui lòng nhập họ và tên.'
+  if (!info.customerName.trim()) errors.customerName = 'Vui lòng nhập họ và tên.'
   if (!info.phone.trim()) {
     errors.phone = 'Vui lòng nhập số điện thoại.'
   } else if (!isValidPhone(info.phone)) {
@@ -34,7 +35,7 @@ function validateForm(info: CustomerInfo): FormErrors {
   return errors
 }
 
-const EMPTY_INFO: CustomerInfo = { name: '', phone: '', address: '', note: '' }
+const EMPTY_INFO: CustomerInfo = { customerName: '', phone: '', address: '', note: '' }
 
 // ─── OrderSummary ─────────────────────────────────────────────────────────────
 
@@ -42,15 +43,14 @@ type OrderSummaryProps = {
   items: OrderDraftItem[]
   products: LunchProduct[]
   total: number
-  submitting: boolean
-  isEmpty: boolean
+  canCheckout: boolean
   onIncrease: (productId: string) => void
   onDecrease: (productId: string) => void
   onRemove: (productId: string) => void
 }
 
 function OrderSummary({
-  items, products, total, submitting, isEmpty,
+  items, products, total, canCheckout,
   onIncrease, onDecrease, onRemove,
 }: OrderSummaryProps) {
   return (
@@ -140,17 +140,9 @@ function OrderSummary({
               type="submit"
               form="checkout-form"
               className="btn btn-primary w-100"
-              disabled={submitting || isEmpty}
-              aria-busy={submitting}
+              disabled={!canCheckout}
             >
-              {submitting ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" aria-hidden="true" />
-                  Đang xử lý...
-                </>
-              ) : (
-                'Xác nhận đơn hàng'
-              )}
+              Xác nhận đơn hàng
             </button>
           </>
         )}
@@ -218,11 +210,11 @@ function FormField({
 // ─── OrderResult ──────────────────────────────────────────────────────────────
 
 type OrderResultProps = {
-  order: OrderDraft
-  onNewOrder: () => void
+  order: ConfirmedOrder
+  menuHref: string
 }
 
-function OrderResult({ order, onNewOrder }: OrderResultProps) {
+function OrderResult({ order, menuHref }: OrderResultProps) {
   return (
     <section className="container py-5" aria-label="Kết quả đặt hàng">
       <div className="text-center mb-4">
@@ -242,7 +234,7 @@ function OrderResult({ order, onNewOrder }: OrderResultProps) {
 
           <dl className="row mb-3">
             <dt className="col-5">Họ và tên</dt>
-            <dd className="col-7">{order.customer.name}</dd>
+            <dd className="col-7">{order.customer.customerName}</dd>
             <dt className="col-5">Điện thoại</dt>
             <dd className="col-7">{order.customer.phone}</dd>
             <dt className="col-5">Địa chỉ</dt>
@@ -277,14 +269,7 @@ function OrderResult({ order, onNewOrder }: OrderResultProps) {
       </div>
 
       <div className="d-flex gap-3 justify-content-center mt-4 flex-wrap">
-        <button
-          type="button"
-          className="btn btn-outline-primary"
-          onClick={onNewOrder}
-        >
-          Đặt thêm món khác
-        </button>
-        <Link to="/menu" className="btn btn-primary">
+        <Link to={menuHref} className="btn btn-primary">
           Về thực đơn
         </Link>
       </div>
@@ -296,38 +281,30 @@ function OrderResult({ order, onNewOrder }: OrderResultProps) {
 
 function CheckoutPage() {
   const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const cartItems = useAppSelector((state) => state.cart.items)
+  const menuHref = useOutletContext<string>()
+  const { lines, total, canCheckout } = useAppSelector(selectCartSummary)
   const { products, status: catalogStatus } = useAppSelector(selectCatalog)
+  const { state: revalidationState, revalidate } = useRevalidator()
 
   const [info, setInfo] = useState<CustomerInfo>(EMPTY_INFO)
   const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerInfo, boolean>>>({})
-  const [submitting, setSubmitting] = useState(false)
-  const [confirmedOrder, setConfirmedOrder] = useState<OrderDraft | null>(null)
+  const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null)
 
-  const submittingRef = useRef(false)
+  const hasConfirmed = useRef(false)
 
   const orderItems = useMemo<OrderDraftItem[]>(() => {
-    return cartItems.flatMap((cartItem) => {
-      const product = products.find((p) => p.id === cartItem.productId)
-      if (!product) return []
+    return lines.flatMap(({ product, productId, quantity, lineTotal }) => {
+      if (!product || lineTotal === null) return []
       return [{
-        productId: cartItem.productId,
+        productId,
         productName: product.name,
-        quantity: cartItem.quantity,
+        quantity,
         unitPrice: product.price,
-        lineTotal: product.price * cartItem.quantity,
+        lineTotal,
       }]
     })
-  }, [cartItems, products])
-
-  const total = useMemo(
-    () => orderItems.reduce((sum, item) => sum + item.lineTotal, 0),
-    [orderItems],
-  )
-
-  const isEmpty = cartItems.length === 0
+  }, [lines])
 
   const activeErrors = useMemo<FormErrors>(() => {
     if (Object.keys(touched).length === 0) return {}
@@ -349,31 +326,24 @@ function CheckoutPage() {
     setTouched((prev) => ({ ...prev, [field]: true }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (isEmpty) return
-    if (submittingRef.current) return
-    submittingRef.current = true
-    setSubmitting(true)
+    if (!canCheckout || hasConfirmed.current) return
 
     const allTouched: Partial<Record<keyof CustomerInfo, boolean>> = {
-      name: true, phone: true, address: true,
+      customerName: true, phone: true, address: true,
     }
     setTouched(allTouched)
     const formErrors = validateForm(info)
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors)
-      submittingRef.current = false
-      setSubmitting(false)
       return
     }
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 600))
-
-    const order: OrderDraft = {
+    const order: ConfirmedOrder = {
       orderId: generateOrderId(),
       customer: {
-        name: info.name.trim(),
+        customerName: info.customerName.trim(),
         phone: info.phone.trim(),
         address: info.address.trim(),
         note: info.note.trim(),
@@ -384,23 +354,14 @@ function CheckoutPage() {
       createdAt: new Date().toISOString(),
     }
 
-    dispatch(clearCart())
+    hasConfirmed.current = true
     setConfirmedOrder(order)
-    submittingRef.current = false
-    setSubmitting(false)
-  }
-
-  function handleNewOrder() {
-    setConfirmedOrder(null)
-    setInfo(EMPTY_INFO)
-    setErrors({})
-    setTouched({})
-    navigate('/menu')
+    dispatch(clearCart())
   }
 
   // ── Kết quả đơn hàng ───────────────────────────────────────────────────────
   if (confirmedOrder) {
-    return <OrderResult order={confirmedOrder} onNewOrder={handleNewOrder} />
+    return <OrderResult order={confirmedOrder} menuHref={menuHref} />
   }
 
   // ── Catalog đang tải ───────────────────────────────────────────────────────
@@ -413,14 +374,33 @@ function CheckoutPage() {
   }
 
   // ── Giỏ trống ──────────────────────────────────────────────────────────────
-  if (isEmpty) {
+  if (lines.length === 0) {
     return (
       <section className="container py-5 text-center" aria-label="Giỏ hàng trống">
         <h1 className="mb-3">Thanh toán</h1>
         <p className="text-muted">Giỏ hàng của bạn đang trống.</p>
-        <Link to="/menu" className="btn btn-primary mt-3">
+        <Link to={menuHref} className="btn btn-primary mt-3">
           Xem thực đơn
         </Link>
+      </section>
+    )
+  }
+
+  if (catalogStatus === 'error' || !canCheckout) {
+    return (
+      <section className="container py-4">
+        <h1>Thanh toán</h1>
+        <p role="alert" className="text-danger">
+          {catalogStatus === 'error'
+            ? 'Không thể tải danh sách sản phẩm.'
+            : 'Hãy xóa món không khả dụng khỏi giỏ trước khi xác nhận đơn.'}
+        </p>
+        {catalogStatus === 'error' && (
+          <button type="button" className="btn btn-primary me-2" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+            Thử lại
+          </button>
+        )}
+        <Link to="/cart" state={{ fromMenu: menuHref }} className="btn btn-outline-primary">Quay về giỏ hàng</Link>
       </section>
     )
   }
@@ -441,12 +421,12 @@ function CheckoutPage() {
               id="checkout-name"
               label="Họ và tên"
               required
-              value={info.name}
-              error={errors.name ?? activeErrors.name}
+              value={info.customerName}
+              error={errors.customerName ?? activeErrors.customerName}
               autoComplete="name"
               placeholder="Nguyễn Văn A"
-              onChange={(v) => handleChange('name', v)}
-              onBlur={() => handleBlur('name')}
+              onChange={(v) => handleChange('customerName', v)}
+              onBlur={() => handleBlur('customerName')}
             />
             <FormField
               id="checkout-phone"
@@ -512,14 +492,14 @@ function CheckoutPage() {
             items={orderItems}
             products={products}
             total={total}
-            submitting={submitting}
-            isEmpty={isEmpty}
+            canCheckout={canCheckout}
             onIncrease={(id) => dispatch(increaseQuantity(id))}
             onDecrease={(id) => dispatch(decreaseQuantity(id))}
             onRemove={(id) => dispatch(removeFromCart(id))}
           />
         </div>
       </div>
+      <Link to="/cart" state={{ fromMenu: menuHref }} className="btn btn-outline-primary mt-3">Quay về giỏ hàng</Link>
     </section>
   )
 }

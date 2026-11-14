@@ -2,13 +2,15 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createServer } from 'vite'
 
-let server, appStore, loaderModule, catalogModule, cartModule
+let server, appStore, loaderModule, catalogModule, cartModule, summaryModule, catalogSlice
 before(async () => {
   server = await createServer({ server: { middlewareMode: true, watch: null, ws: false } })
   appStore = await server.ssrLoadModule('/src/app/store.ts')
   loaderModule = await server.ssrLoadModule('/src/features/catalog/catalogLoader.ts')
   catalogModule = await server.ssrLoadModule('/src/services/catalogService.ts')
   cartModule = await server.ssrLoadModule('/src/features/cart/cartSlice.ts')
+  summaryModule = await server.ssrLoadModule('/src/features/cart/cartSummary.ts')
+  catalogSlice = await server.ssrLoadModule('/src/features/catalog/catalogSlice.ts')
 })
 after(async () => { await server?.close() })
 
@@ -46,4 +48,32 @@ test('catalog can retry after a source failure', async () => {
   await load()
   assert.equal(store.getState().catalog.status, 'ready')
   assert.equal(store.getState().catalog.products.length, 20)
+})
+
+test('shared cart total follows quantity changes and blocks checkout for unavailable items', async () => {
+  const products = await catalogModule.getCatalog()
+  const store = appStore.createAppStore()
+  const [first, second, third] = products
+  store.dispatch(catalogSlice.catalogLoaded([first, second, { ...third, isAvailable: false }]))
+  const { addToCart, decreaseQuantity, removeFromCart } = cartModule
+  const summary = () => summaryModule.selectCartSummary(store.getState())
+
+  store.dispatch(addToCart(first.id))
+  store.dispatch(addToCart(first.id))
+  store.dispatch(addToCart(second.id))
+  assert.equal(summary().total, 130000)
+  assert.equal(summary().totalQuantity, 3)
+  assert.equal(summary().canCheckout, true)
+
+  store.dispatch(decreaseQuantity(first.id))
+  assert.equal(summary().total, 85000)
+
+  for (const id of ['local:missing', third.id]) {
+    store.dispatch(addToCart(id))
+    assert.equal(summary().lines.find((line) => line.productId === id).lineTotal, null)
+    assert.equal(summary().canCheckout, false)
+    assert.equal(summary().total, 85000)
+    store.dispatch(removeFromCart(id))
+    assert.equal(summary().canCheckout, true)
+  }
 })
