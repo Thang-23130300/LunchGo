@@ -373,9 +373,9 @@
     display: block;
     width: 100%;
     padding: 14px 16px;
-    border: 1px solid #b45309;
+    border: 1px solid #3d6b47;
     border-radius: 2px;
-    background: #b45309;
+    background: #3d6b47;
     color: white;
     font-size: 16px;
     font-weight: 700;
@@ -383,8 +383,8 @@
     text-align: center;
 
     &:hover:not(:disabled) {
-      background: #92400e;
-      border-color: #92400e;
+      background: #2d5236;
+      border-color: #2d5236;
     }
 
     &:disabled {
@@ -585,17 +585,17 @@
   &__menu-btn {
     display: inline-block;
     padding: 14px 36px;
-    border: 1px solid #b45309;
+    border: 1px solid #3d6b47;
     border-radius: 2px;
-    background: #b45309;
+    background: #3d6b47;
     color: white;
     font-size: 16px;
     font-weight: 700;
     text-decoration: none;
 
     &:hover {
-      background: #92400e;
-      border-color: #92400e;
+      background: #2d5236;
+      border-color: #2d5236;
       color: white;
     }
   }
