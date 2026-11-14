@@ -295,3 +295,50 @@
     }
   }
 }
+
+.product-detail {
+  &__quantity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin: 24px 0;
+
+    &-label {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    &-controls {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+
+      button {
+        width: 36px;
+        height: 36px;
+        border: 1px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fffdf8;
+        color: #1f2937;
+        font-size: 20px;
+        cursor: pointer;
+
+        &:hover:not(:disabled) {
+          background: #f5e9d8;
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      }
+
+      span {
+        min-width: 24px;
+        text-align: center;
+        font-weight: 600;
+      }
+    }
+  }
+}

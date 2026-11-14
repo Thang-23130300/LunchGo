@@ -1,8 +1,12 @@
+
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
-import { addToCart } from '@/features/cart/cartSlice'
+import {
+  addToCart,
+  increaseQuantity,
+} from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { useLocation, useNavigate, useParams, useRevalidator } from 'react-router'
 import '../styles/product-detail.scss'
@@ -42,6 +46,8 @@ function ShareButton({ productName }: ShareButtonProps) {
 
 function ProductPage() {
   const dispatch = useDispatch<AppDispatch>()
+  const [quantity, setQuantity] = useState(1)
+
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -62,6 +68,18 @@ function ProductPage() {
 
   function handleBack() {
     navigate(menuHref)
+  }
+
+  function handleAddToCart() {
+    if (!product || !product.isAvailable) return
+
+    dispatch(addToCart(product.id))
+
+    for (let i = 1; i < quantity; i += 1) {
+      dispatch(increaseQuantity(product.id))
+    }
+
+    setQuantity(1)
   }
 
   if (status === 'idle') {
@@ -188,13 +206,45 @@ function ProductPage() {
               )}
             </div>
 
+            <div className="product-detail__quantity">
+              <span className="product-detail__quantity-label">
+                Số lượng
+              </span>
+
+              <div className="product-detail__quantity-controls">
+                <button
+                  type="button"
+                  aria-label="Giảm số lượng"
+                  disabled={quantity <= 1 || !product.isAvailable}
+                  onClick={() =>
+                    setQuantity((current) => Math.max(1, current - 1))
+                  }
+                >
+                  −
+                </button>
+
+                <span aria-live="polite">{quantity}</span>
+
+                <button
+                  type="button"
+                  aria-label="Tăng số lượng"
+                  disabled={!product.isAvailable}
+                  onClick={() =>
+                    setQuantity((current) => current + 1)
+                  }
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
             <button
               type="button"
               className="product-detail__add-button"
               disabled={!product.isAvailable}
-              onClick={() => dispatch(addToCart(product.id))}
+              onClick={handleAddToCart}
             >
-              + Thêm vào giỏ hàng
+              + Thêm {quantity > 1 ? `${quantity} sản phẩm` : 'vào giỏ hàng'}
             </button>
 
             <p className="product-detail__source">
