@@ -9,6 +9,7 @@ import {
 } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
+import '../styles/cart.scss'
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -16,157 +17,168 @@ function formatPrice(price: number) {
 
 function CartPage() {
   const dispatch = useAppDispatch()
-  const { lines: cartDetails, totalQuantity, total: totalPrice, canCheckout } = useAppSelector(selectCartSummary)
+  const {
+    lines: cartDetails,
+    totalQuantity,
+    total: totalPrice,
+    canCheckout,
+  } = useAppSelector(selectCartSummary)
+
   const { status } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
   const menuHref = useOutletContext<string>()
 
   if (status === 'idle') {
     return (
-      <section className="container py-4">
-        <h1>Giỏ hàng</h1>
-        <p>Đang tải giỏ hàng...</p>
+      <section className="cart-page">
+        <div className="cart-page__container">
+          <h1 className="cart-page__title">Giỏ hàng</h1>
+          <p className="cart-page__message">Đang tải giỏ hàng...</p>
+        </div>
       </section>
     )
   }
 
   if (status === 'error') {
     return (
-      <section className="container py-4">
-        <h1>Giỏ hàng</h1>
-        <p className="text-danger" role="alert">Không thể tải danh sách sản phẩm.</p>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => void revalidate()}
-          disabled={revalidationState === 'loading'}
-        >
-          Thử lại
-        </button>
+      <section className="cart-page">
+        <div className="cart-page__container">
+          <h1 className="cart-page__title">Giỏ hàng</h1>
+          <p className="cart-page__error" role="alert">
+            Không thể tải danh sách sản phẩm.
+          </p>
+
+          <button
+            type="button"
+            className="cart-page__button cart-page__button--primary"
+            onClick={() => void revalidate()}
+            disabled={revalidationState === 'loading'}
+          >
+            Thử lại
+          </button>
+        </div>
       </section>
     )
   }
 
   if (cartDetails.length === 0) {
     return (
-      <section className="container py-5 text-center">
-        <h1 className="mb-3">Giỏ hàng</h1>
-        <p className="text-muted">Giỏ hàng của bạn đang trống.</p>
-        <Link to={menuHref} className="btn btn-primary mt-3">
-          Tiếp tục mua hàng
-        </Link>
+      <section className="cart-page">
+        <div className="cart-page__container cart-page__empty">
+          <h1 className="cart-page__title">Giỏ hàng</h1>
+          <p>Giỏ hàng của bạn đang trống.</p>
+          <Link to={menuHref} className="cart-page__button cart-page__button--primary">
+            Tiếp tục mua hàng
+          </Link>
+        </div>
       </section>
     )
   }
 
   return (
-    <section className="container py-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h1 className="mb-1">Giỏ hàng</h1>
-          <p className="text-muted mb-0">
-            Bạn đang có {totalQuantity} sản phẩm trong giỏ hàng.
-          </p>
+    <section className="cart-page">
+      <div className="cart-page__container">
+        <div className="cart-page__header">
+          <div>
+            <p className="cart-page__eyebrow">LUNCHGO · ĐẶT MÓN YÊU THÍCH</p>
+            <h1 className="cart-page__title">Giỏ hàng của bạn</h1>
+            <p className="cart-page__subtitle">
+              Bạn đang có {totalQuantity} sản phẩm trong giỏ hàng.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="cart-page__clear"
+            onClick={() => dispatch(clearCart())}
+          >
+            Xóa toàn bộ
+          </button>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-outline-danger"
-          onClick={() => dispatch(clearCart())}
-        >
-          Xóa toàn bộ
-        </button>
-      </div>
+        <div className="cart-page__layout">
+          <div className="cart-page__items">
+            <h2 className="cart-page__section-title">
+              Danh sách món ăn
+            </h2>
 
-      <div className="row g-4">
-        <div className="col-lg-8">
-          {cartDetails.map((item) => (
-            <div
-              key={item.productId}
-              className="card mb-3"
-            >
-              <div className="card-body">
+            {cartDetails.map((item) => (
+              <article className="cart-item" key={item.productId}>
                 {item.product && item.lineTotal !== null ? (
-                  <div className="row align-items-center g-3">
-                    <div className="col-4 col-md-3">
+                  <>
+                    <div className="cart-item__image-wrapper">
                       <img
                         src={item.product.image}
                         alt={item.product.name}
-                        className="img-fluid rounded"
+                        className="cart-item__image"
                       />
                     </div>
 
-                    <div className="col-8 col-md-9">
-                      <div className="d-flex justify-content-between gap-2">
+                    <div className="cart-item__details">
+                      <div className="cart-item__top">
                         <div>
-                          <h5 className="mb-2">
+                          <h3 className="cart-item__name">
                             {item.product.name}
-                          </h5>
-                          <p className="text-primary fw-bold mb-2">
+                          </h3>
+                          <p className="cart-item__price">
                             {formatPrice(item.product.price)}
                           </p>
                         </div>
 
                         <button
                           type="button"
-                          className="btn btn-sm btn-outline-danger align-self-start"
+                          className="cart-item__remove"
                           onClick={() =>
                             dispatch(removeFromCart(item.productId))
                           }
+                          aria-label={`Xóa ${item.product.name} khỏi giỏ hàng`}
                         >
                           Xóa
                         </button>
                       </div>
 
-                      <div className="d-flex align-items-center gap-2">
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary"
-                          disabled={item.quantity <= 1}
-                          onClick={() =>
-                            dispatch(decreaseQuantity(item.productId))
-                          }
-                        >
-                          -
-                        </button>
+                      <div className="cart-item__bottom">
+                        <div className="cart-item__quantity">
+                          <button
+                            type="button"
+                            disabled={item.quantity <= 1}
+                            onClick={() =>
+                              dispatch(decreaseQuantity(item.productId))
+                            }
+                            aria-label="Giảm số lượng"
+                          >
+                            −
+                          </button>
 
-                        <span className="fw-bold">
-                          {item.quantity}
-                        </span>
+                          <span>{item.quantity}</span>
 
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() =>
-                            dispatch(increaseQuantity(item.productId))
-                          }
-                        >
-                          +
-                        </button>
-                      </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              dispatch(increaseQuantity(item.productId))
+                            }
+                            aria-label="Tăng số lượng"
+                          >
+                            +
+                          </button>
+                        </div>
 
-                      <p className="mt-2 mb-0">
-                        Thành tiền:{' '}
-                        <strong>
+                        <p className="cart-item__total">
                           {formatPrice(item.lineTotal)}
-                        </strong>
-                      </p>
+                        </p>
+                      </div>
                     </div>
-                  </div>
+                  </>
                 ) : (
-                  <div className="d-flex justify-content-between align-items-center">
+                  <div className="cart-item__unavailable">
                     <div>
-                      <p className="mb-1 fw-bold">
-                        Sản phẩm không khả dụng
-                      </p>
-                      <small className="text-muted">
-                        Mã sản phẩm: {item.productId}
-                      </small>
+                      <h3>Sản phẩm không khả dụng</h3>
+                      <p>Mã sản phẩm: {item.productId}</p>
                     </div>
 
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-danger"
+                      className="cart-item__remove"
                       onClick={() =>
                         dispatch(removeFromCart(item.productId))
                       }
@@ -175,50 +187,52 @@ function CartPage() {
                     </button>
                   </div>
                 )}
-              </div>
-            </div>
-          ))}
+              </article>
+            ))}
 
-          <Link to={menuHref} className="btn btn-outline-primary">
-            Tiếp tục mua hàng
-          </Link>
-        </div>
-
-        <div className="col-lg-4">
-          <div className="card">
-            <div className="card-body">
-              <h5 className="card-title mb-3">
-                Tổng đơn hàng
-              </h5>
-
-              <div className="d-flex justify-content-between mb-3">
-                <span>Số lượng sản phẩm</span>
-                <strong>{totalQuantity}</strong>
-              </div>
-
-              <div className="d-flex justify-content-between mb-3">
-                <span>Tạm tính</span>
-                <strong>{formatPrice(totalPrice)}</strong>
-              </div>
-
-              <hr />
-
-              <div className="d-flex justify-content-between mb-3">
-                <strong>Tổng cộng</strong>
-                <strong className="text-primary fs-5">
-                  {formatPrice(totalPrice)}
-                </strong>
-              </div>
-
-              {canCheckout ? (
-                <Link to="/checkout" state={{ fromMenu: menuHref }} className="btn btn-primary w-100">
-                  Tiến hành thanh toán
-                </Link>
-              ) : (
-                <p className="text-danger mb-0" role="alert">Hãy xóa món không khả dụng để thanh toán.</p>
-              )}
-            </div>
+            <Link to={menuHref} className="cart-page__continue">
+              ← Tiếp tục mua hàng
+            </Link>
           </div>
+
+          <aside className="cart-summary">
+            <h2 className="cart-summary__title">Tổng đơn hàng</h2>
+
+            <div className="cart-summary__row">
+              <span>Số lượng sản phẩm</span>
+              <strong>{totalQuantity}</strong>
+            </div>
+
+            <div className="cart-summary__row">
+              <span>Tạm tính</span>
+              <strong>{formatPrice(totalPrice)}</strong>
+            </div>
+
+            <div className="cart-summary__divider" />
+
+            <div className="cart-summary__total">
+              <span>Tổng cộng</span>
+              <strong>{formatPrice(totalPrice)}</strong>
+            </div>
+
+            {canCheckout ? (
+              <Link
+                to="/checkout"
+                state={{ fromMenu: menuHref }}
+                className="cart-summary__checkout"
+              >
+                Tiến hành thanh toán
+              </Link>
+            ) : (
+              <p className="cart-summary__warning" role="alert">
+                Hãy xóa món không khả dụng để thanh toán.
+              </p>
+            )}
+
+            <p className="cart-summary__note">
+              Cảm ơn bạn đã lựa chọn LunchGo!
+            </p>
+          </aside>
         </div>
       </div>
     </section>
