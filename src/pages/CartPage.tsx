@@ -61,19 +61,39 @@ function CartPage() {
     )
   }
 
-  if (cartDetails.length === 0) {
-    return (
-      <section className="cart-page">
-        <div className="cart-page__container cart-page__empty">
-          <h1 className="cart-page__title">Giỏ hàng</h1>
-          <p>Giỏ hàng của bạn đang trống.</p>
-          <Link to={menuHref} className="cart-page__button cart-page__button--primary">
-            Tiếp tục mua hàng
-          </Link>
+
+if (cartDetails.length === 0) {
+  return (
+    <section className="cart-page">
+      <div className="cart-page__container cart-page__empty">
+        <div className="cart-page__empty-icon" aria-hidden="true">
+          🛒
         </div>
-      </section>
-    )
-  }
+
+        <p className="cart-page__empty-eyebrow">
+          LUNCHGO · GIỎ HÀNG
+        </p>
+
+        <h1 className="cart-page__title">
+          Giỏ hàng đang trống
+        </h1>
+
+        <p className="cart-page__empty-description">
+          Bạn chưa thêm món ăn nào. Hãy khám phá thực đơn và chọn
+          những món yêu thích nhé!
+        </p>
+
+        <Link
+          to={menuHref}
+          className="cart-page__button cart-page__button--primary"
+        >
+          Khám phá thực đơn
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 
   return (
     <section className="cart-page">
@@ -170,22 +190,36 @@ function CartPage() {
                     </div>
                   </>
                 ) : (
-                  <div className="cart-item__unavailable">
-                    <div>
-                      <h3>Sản phẩm không khả dụng</h3>
-                      <p>Mã sản phẩm: {item.productId}</p>
-                    </div>
+                  
+<div className="cart-item__unavailable">
+  <div className="cart-item__unavailable-icon" aria-hidden="true">
+    !
+  </div>
 
-                    <button
-                      type="button"
-                      className="cart-item__remove"
-                      onClick={() =>
-                        dispatch(removeFromCart(item.productId))
-                      }
-                    >
-                      Xóa
-                    </button>
-                  </div>
+  <div className="cart-item__unavailable-content">
+    <span className="cart-item__unavailable-label">
+      Không thể đặt món
+    </span>
+
+    <h3>Sản phẩm không khả dụng</h3>
+
+    <p>
+      Món ăn này hiện không còn trong thực đơn hoặc đã tạm hết.
+      Vui lòng xóa sản phẩm để tiếp tục thanh toán.
+    </p>
+
+    <small>Mã sản phẩm: {item.productId}</small>
+  </div>
+
+  <button
+    type="button"
+    className="cart-item__remove"
+    onClick={() => dispatch(removeFromCart(item.productId))}
+  >
+    Xóa món
+  </button>
+</div>
+
                 )}
               </article>
             ))}
