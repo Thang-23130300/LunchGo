@@ -7,6 +7,7 @@ import { selectCatalog } from '@/features/catalog/catalogSlice'
 import type { LunchProduct } from '@/models/product'
 import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
+import '../styles/checkout.scss'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -15,8 +16,6 @@ function formatPrice(price: number): string {
 }
 
 function isValidPhone(value: string): boolean {
-  // Chỉ chấp nhận chữ số, khoảng trắng, dấu gạch, dấu +
-  // Tổng số chữ số phải từ 9 đến 11
   const digits = value.replace(/\D/g, '')
   return /^\+?[\d -]+$/.test(value.trim()) && digits.length >= 9 && digits.length <= 11
 }
@@ -54,100 +53,89 @@ function OrderSummary({
   onIncrease, onDecrease, onRemove,
 }: OrderSummaryProps) {
   return (
-    <div className="card">
-      <div className="card-body">
-        <h5 className="card-title mb-3">Tóm tắt đơn hàng</h5>
+    <aside className="checkout-summary">
+      <p className="checkout-summary__title">Tóm tắt đơn hàng</p>
+      <div className="checkout-summary__divider" />
 
-        {items.length === 0 ? (
-          <p className="text-muted text-center py-3 mb-0">Chưa có món nào trong giỏ.</p>
-        ) : (
-          <>
-            {items.map((item) => {
-              const product = products.find((p) => p.id === item.productId)
-              return (
-                <div key={item.productId} className="card mb-3">
-                  <div className="card-body py-2 px-3">
-                    <div className="row align-items-center g-2">
-                      <div className="col-3">
-                        <img
-                          src={product?.image ?? ''}
-                          alt={item.productName}
-                          className="img-fluid rounded"
-                        />
-                      </div>
-                      <div className="col-9">
-                        <div className="d-flex justify-content-between gap-2 align-items-start">
-                          <div>
-                            <p className="mb-1 fw-semibold small">{item.productName}</p>
-                            <p className="text-primary fw-bold mb-1 small">
-                              {formatPrice(item.unitPrice)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-danger align-self-start"
-                            onClick={() => onRemove(item.productId)}
-                            aria-label={`Xóa ${item.productName}`}
-                          >
-                            Xóa
-                          </button>
-                        </div>
-                        <div className="d-flex align-items-center gap-2">
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary"
-                            disabled={item.quantity <= 1}
-                            onClick={() => onDecrease(item.productId)}
-                          >
-                            -
-                          </button>
-                          <span className="fw-bold">{item.quantity}</span>
-                          <button
-                            type="button"
-                            className="btn btn-sm btn-outline-secondary"
-                            onClick={() => onIncrease(item.productId)}
-                          >
-                            +
-                          </button>
-                          <small className="text-muted ms-auto">
-                            = <strong>{formatPrice(item.lineTotal)}</strong>
-                          </small>
-                        </div>
-                      </div>
-                    </div>
+      {items.length === 0 ? (
+        <p className="checkout-summary__empty">Chưa có món nào trong giỏ.</p>
+      ) : (
+        <>
+          {items.map((item) => {
+            const product = products.find((p) => p.id === item.productId)
+            return (
+              <div key={item.productId} className="checkout-summary__item">
+                <div className="checkout-summary__item-header">
+                  <div>
+                    <p className="checkout-summary__item-name">{item.productName}</p>
+                    <p className="checkout-summary__item-price">{formatPrice(item.unitPrice)}</p>
                   </div>
+                  <button
+                    type="button"
+                    className="checkout-summary__item-remove"
+                    onClick={() => onRemove(item.productId)}
+                    aria-label={`Xóa ${item.productName}`}
+                  >
+                    Xóa
+                  </button>
                 </div>
-              )
-            })}
+                <div className="checkout-summary__item-controls">
+                  <div className="checkout-summary__item-quantity">
+                    <button
+                      type="button"
+                      disabled={item.quantity <= 1}
+                      onClick={() => onDecrease(item.productId)}
+                      aria-label="Giảm số lượng"
+                    >
+                      −
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button
+                      type="button"
+                      onClick={() => onIncrease(item.productId)}
+                      aria-label="Tăng số lượng"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="checkout-summary__item-linetotal">
+                    {formatPrice(item.lineTotal)}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
 
-            <div className="d-flex justify-content-between mb-2">
+          <div className="checkout-summary__pricing">
+            <div className="checkout-summary__row">
               <span>Tạm tính</span>
-              <strong>{formatPrice(total)}</strong>
+              <span>{formatPrice(total)}</span>
             </div>
-            <div className="d-flex justify-content-between mb-3 text-muted">
+            <div className="checkout-summary__row">
               <span>Phí giao hàng</span>
-              <span>0đ <small>(demo)</small></span>
+              <span>0đ (demo)</span>
             </div>
 
-            <hr />
-
-            <div className="d-flex justify-content-between mb-3">
-              <strong>Tổng cộng</strong>
-              <strong className="text-primary fs-5">{formatPrice(total)}</strong>
+            <div className="checkout-summary__total">
+              <span>Tổng cộng</span>
+              <strong>{formatPrice(total)}</strong>
             </div>
 
             <button
               type="submit"
               form="checkout-form"
-              className="btn btn-primary w-100"
+              className="checkout-summary__confirm-btn"
               disabled={!canCheckout}
             >
               Xác nhận đơn hàng
             </button>
-          </>
-        )}
-      </div>
-    </div>
+            <p className="checkout-summary__confirm-note">
+              Đơn demo · Không phát sinh thanh toán thật
+            </p>
+          </div>
+        </>
+      )}
+    </aside>
   )
 }
 
@@ -191,7 +179,7 @@ function FormField({
     <div className="mb-3">
       <label htmlFor={id} className="form-label">
         {label}
-        {required && <span className="text-danger ms-1" aria-hidden="true">*</span>}
+        {required && <span className="required-mark" aria-hidden="true">*</span>}
       </label>
       {as === 'textarea' ? (
         <textarea {...commonProps} rows={3} />
@@ -216,64 +204,89 @@ type OrderResultProps = {
 
 function OrderResult({ order, menuHref }: OrderResultProps) {
   return (
-    <section className="container py-5" aria-label="Kết quả đặt hàng">
-      <div className="text-center mb-4">
-        <div className="display-1" aria-hidden="true">✅</div>
-        <h1 className="fw-bold mt-2">Đặt hàng demo thành công!</h1>
-        <p className="text-muted">
-          Đây là đơn hàng <strong>minh họa</strong> — không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
-        </p>
-      </div>
+    <div className="order-result">
+      <div className="order-result__container">
+        {/* Breadcrumb */}
+        <nav className="order-result__breadcrumb" aria-label="Breadcrumb">
+          <Link to="/">Trang chủ</Link>
+          <span>/</span>
+          <Link to="/checkout">Thanh toán</Link>
+          <span>/</span>
+          Kết quả đơn hàng
+        </nav>
 
-      <div className="card mx-auto" style={{ maxWidth: 560 }}>
-        <div className="card-body">
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <h5 className="card-title mb-0">Chi tiết đơn hàng</h5>
-            <span className="text-primary fw-semibold font-monospace small">{order.orderId}</span>
+        {/* Check icon */}
+        <div className="order-result__check-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+
+        <h1 className="order-result__heading">Đặt hàng demo thành công!</h1>
+        <p className="order-result__thank-you">Cảm ơn bạn đã lựa chọn LunchGo.</p>
+
+        <div className="order-result__notice">
+          Đây là đơn hàng minh họa. Không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
+        </div>
+
+        {/* Chi tiết đơn hàng */}
+        <div className="order-result__card">
+          <div className="order-result__card-header">
+            <span className="order-result__card-label">Chi tiết đơn hàng</span>
+            <span className="order-result__order-id">{order.orderId}</span>
           </div>
 
-          <dl className="row mb-3">
-            <dt className="col-5">Họ và tên</dt>
-            <dd className="col-7">{order.customer.customerName}</dd>
-            <dt className="col-5">Điện thoại</dt>
-            <dd className="col-7">{order.customer.phone}</dd>
-            <dt className="col-5">Địa chỉ</dt>
-            <dd className="col-7">{order.customer.address}</dd>
+          <dl>
+            <div className="order-result__info-row">
+              <dt>Họ và tên</dt>
+              <dd>{order.customer.customerName}</dd>
+            </div>
+            <div className="order-result__info-row">
+              <dt>Điện thoại</dt>
+              <dd>{order.customer.phone}</dd>
+            </div>
+            <div className="order-result__info-row">
+              <dt>Địa chỉ</dt>
+              <dd>{order.customer.address}</dd>
+            </div>
             {order.customer.note && (
-              <>
-                <dt className="col-5">Ghi chú</dt>
-                <dd className="col-7">{order.customer.note}</dd>
-              </>
+              <div className="order-result__info-row">
+                <dt>Ghi chú</dt>
+                <dd>{order.customer.note}</dd>
+              </div>
             )}
-            <dt className="col-5">Thanh toán</dt>
-            <dd className="col-7">COD (tiền mặt khi nhận — minh họa)</dd>
+            <div className="order-result__info-row">
+              <dt>Thanh toán</dt>
+              <dd>COD (demo)</dd>
+            </div>
           </dl>
 
-          <ul className="list-group list-group-flush mb-3">
-            {order.items.map((item) => (
-              <li
-                key={item.productId}
-                className="list-group-item d-flex justify-content-between px-0"
-              >
-                <span>{item.productName} × {item.quantity}</span>
-                <span className="fw-semibold">{formatPrice(item.lineTotal)}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="order-result__items-divider" />
 
-          <div className="d-flex justify-content-between fw-bold fs-5 border-top pt-2">
+          {order.items.map((item) => (
+            <div key={item.productId} className="order-result__item-row">
+              <span>{item.productName} × {item.quantity}</span>
+              <strong>{formatPrice(item.lineTotal)}</strong>
+            </div>
+          ))}
+
+          <div className="order-result__total-row">
             <span>Tổng cộng</span>
-            <span className="text-primary">{formatPrice(order.total)}</span>
+            <strong>{formatPrice(order.total)}</strong>
           </div>
         </div>
-      </div>
 
-      <div className="d-flex gap-3 justify-content-center mt-4 flex-wrap">
-        <Link to={menuHref} className="btn btn-primary">
-          Về thực đơn
-        </Link>
+        <div className="order-result__actions">
+          <Link to={menuHref} className="order-result__menu-btn">
+            Về thực đơn →
+          </Link>
+        </div>
+
+        <p className="order-result__hint">
+          Lưu ý: kết quả đơn là state trong /checkout; tải lại trang sẽ không khôi phục kết quả.
+        </p>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -318,7 +331,6 @@ function CheckoutPage() {
 
   function handleChange(field: keyof CustomerInfo, value: string) {
     setInfo((prev) => ({ ...prev, [field]: value }))
-    // Xóa lỗi submit cũ khi người dùng bắt đầu sửa field
     setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
@@ -367,127 +379,166 @@ function CheckoutPage() {
   // ── Catalog đang tải ───────────────────────────────────────────────────────
   if (catalogStatus === 'idle') {
     return (
-      <section className="container py-5 text-center">
-        <p role="status" className="text-muted">Đang tải thông tin đơn hàng...</p>
-      </section>
+      <div className="checkout-page">
+        <div className="checkout-page__container checkout-page__status">
+          <p role="status">Đang tải thông tin đơn hàng...</p>
+        </div>
+      </div>
     )
   }
 
   // ── Giỏ trống ──────────────────────────────────────────────────────────────
   if (lines.length === 0) {
     return (
-      <section className="container py-5 text-center" aria-label="Giỏ hàng trống">
-        <h1 className="mb-3">Thanh toán</h1>
-        <p className="text-muted">Giỏ hàng của bạn đang trống.</p>
-        <Link to={menuHref} className="btn btn-primary mt-3">
-          Xem thực đơn
-        </Link>
-      </section>
+      <div className="checkout-page">
+        <div className="checkout-page__container checkout-page__status">
+          <h1 className="checkout-page__title">Thanh toán</h1>
+          <p style={{ color: '#64748b', marginBottom: 24 }}>Giỏ hàng của bạn đang trống.</p>
+          <Link to={menuHref} className="checkout-page__button checkout-page__button--primary">
+            Xem thực đơn
+          </Link>
+        </div>
+      </div>
     )
   }
 
+  // ── Lỗi catalog hoặc có món không khả dụng ─────────────────────────────────
   if (catalogStatus === 'error' || !canCheckout) {
     return (
-      <section className="container py-4">
-        <h1>Thanh toán</h1>
-        <p role="alert" className="text-danger">
-          {catalogStatus === 'error'
-            ? 'Không thể tải danh sách sản phẩm.'
-            : 'Hãy xóa món không khả dụng khỏi giỏ trước khi xác nhận đơn.'}
-        </p>
-        {catalogStatus === 'error' && (
-          <button type="button" className="btn btn-primary me-2" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
-            Thử lại
-          </button>
-        )}
-        <Link to="/cart" state={{ fromMenu: menuHref }} className="btn btn-outline-primary">Quay về giỏ hàng</Link>
-      </section>
+      <div className="checkout-page">
+        <div className="checkout-page__container">
+          <h1 className="checkout-page__title">Thanh toán</h1>
+          <p className="checkout-page__error-text" role="alert">
+            {catalogStatus === 'error'
+              ? 'Không thể tải danh sách sản phẩm.'
+              : 'Hãy xóa món không khả dụng khỏi giỏ trước khi xác nhận đơn.'}
+          </p>
+          {catalogStatus === 'error' && (
+            <button
+              type="button"
+              className="checkout-page__button checkout-page__button--primary"
+              style={{ marginRight: 12 }}
+              disabled={revalidationState === 'loading'}
+              onClick={() => void revalidate()}
+            >
+              Thử lại
+            </button>
+          )}
+          <Link
+            to="/cart"
+            state={{ fromMenu: menuHref }}
+            className="checkout-page__button checkout-page__button--outline"
+          >
+            Quay về giỏ hàng
+          </Link>
+        </div>
+      </div>
     )
   }
 
   // ── Form checkout ──────────────────────────────────────────────────────────
   return (
-    <section className="container py-4">
-      <h1 className="mb-1">Thanh toán</h1>
-      <p className="text-muted mb-4">Điền thông tin giao hàng và xác nhận đơn hàng demo.</p>
+    <div className="checkout-page">
+      <div className="checkout-page__container">
+        {/* Breadcrumb */}
+        <nav className="checkout-page__breadcrumb" aria-label="Breadcrumb">
+          <Link to="/">Trang chủ</Link>
+          <span>/</span>
+          <Link to="/cart">Giỏ hàng</Link>
+          <span>/</span>
+          Thanh toán
+        </nav>
 
-      <div className="row g-4">
-        {/* Cột trái: form thông tin */}
-        <div className="col-lg-8">
-          <form id="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Biểu mẫu thanh toán">
-            <h5 className="mb-3">Thông tin giao hàng</h5>
+        <h1 className="checkout-page__title">Thanh toán</h1>
+        <p className="checkout-page__subtitle">Điền thông tin giao hàng và xác nhận đơn hàng demo.</p>
 
-            <FormField
-              id="checkout-name"
-              label="Họ và tên"
-              required
-              value={info.customerName}
-              error={errors.customerName ?? activeErrors.customerName}
-              autoComplete="name"
-              placeholder="Nguyễn Văn A"
-              onChange={(v) => handleChange('customerName', v)}
-              onBlur={() => handleBlur('customerName')}
-            />
-            <FormField
-              id="checkout-phone"
-              label="Số điện thoại"
-              required
-              type="tel"
-              inputMode="tel"
-              value={info.phone}
-              error={errors.phone ?? activeErrors.phone}
-              autoComplete="tel"
-              placeholder="0901 234 567"
-              onChange={(v) => handleChange('phone', v)}
-              onBlur={() => handleBlur('phone')}
-            />
-            <FormField
-              id="checkout-address"
-              label="Địa chỉ giao hàng"
-              required
-              value={info.address}
-              error={errors.address ?? activeErrors.address}
-              autoComplete="street-address"
-              placeholder="Số nhà, đường, phường, quận"
-              onChange={(v) => handleChange('address', v)}
-              onBlur={() => handleBlur('address')}
-            />
-            <FormField
-              id="checkout-note"
-              label="Ghi chú"
-              as="textarea"
-              value={info.note}
-              autoComplete="off"
-              placeholder="Ví dụ: giao giờ hành chính"
-              onChange={(v) => handleChange('note', v)}
-              onBlur={() => handleBlur('note')}
-            />
+        <div className="checkout-page__layout">
+          {/* Cột trái: form */}
+          <div>
+            <form id="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Biểu mẫu thanh toán">
+              <div className="checkout-form-card">
+                <h2 className="checkout-form-card__section-title">Thông tin giao hàng</h2>
+                <div className="checkout-form-card__divider" />
 
-            <h5 className="mb-2">Phương thức thanh toán</h5>
-            <div className="card mb-3">
-              <div className="card-body">
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="radio"
-                    id="payment-cod"
-                    name="payment"
-                    value="cod"
-                    defaultChecked
-                    readOnly
-                  />
-                  <label className="form-check-label" htmlFor="payment-cod">
-                    <span className="fw-semibold">Thanh toán khi nhận hàng (COD)</span>
-                    <span className="d-block text-muted small">Mô phỏng, không thu tiền thật</span>
-                  </label>
+                <FormField
+                  id="checkout-name"
+                  label="Họ và tên"
+                  required
+                  value={info.customerName}
+                  error={errors.customerName ?? activeErrors.customerName}
+                  autoComplete="name"
+                  placeholder="Nguyễn Văn A"
+                  onChange={(v) => handleChange('customerName', v)}
+                  onBlur={() => handleBlur('customerName')}
+                />
+                <FormField
+                  id="checkout-phone"
+                  label="Số điện thoại"
+                  required
+                  type="tel"
+                  inputMode="tel"
+                  value={info.phone}
+                  error={errors.phone ?? activeErrors.phone}
+                  autoComplete="tel"
+                  placeholder="0901 234 567"
+                  onChange={(v) => handleChange('phone', v)}
+                  onBlur={() => handleBlur('phone')}
+                />
+                <FormField
+                  id="checkout-address"
+                  label="Địa chỉ giao hàng"
+                  required
+                  value={info.address}
+                  error={errors.address ?? activeErrors.address}
+                  autoComplete="street-address"
+                  placeholder="Số nhà, đường, phường, quận"
+                  onChange={(v) => handleChange('address', v)}
+                  onBlur={() => handleBlur('address')}
+                />
+                <FormField
+                  id="checkout-note"
+                  label="Ghi chú"
+                  as="textarea"
+                  value={info.note}
+                  autoComplete="off"
+                  placeholder="Ví dụ: giao giờ hành chính"
+                  onChange={(v) => handleChange('note', v)}
+                  onBlur={() => handleBlur('note')}
+                />
+
+                <h2 className="checkout-form-card__section-title" style={{ marginTop: 8 }}>
+                  Phương thức thanh toán
+                </h2>
+                <div className="checkout-form-card__divider" />
+
+                <div className="checkout-form-card__cod-card">
+                  <div className="checkout-form-card__cod-card-icon" aria-hidden="true">▣</div>
+                  <div>
+                    <span className="checkout-form-card__cod-card-label">
+                      Thanh toán khi nhận hàng (COD)
+                    </span>
+                    <span className="checkout-form-card__cod-card-sublabel">
+                      Mô phỏng · Không thu tiền thật
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
 
-        {/* Cột phải: tóm tắt đơn */}
-        <div className="col-lg-4">
+            <Link
+              to="/cart"
+              state={{ fromMenu: menuHref }}
+              className="checkout-page__back"
+            >
+              ← Quay về giỏ hàng
+            </Link>
+
+            <p className="checkout-page__hint">
+              Các trường * là bắt buộc. Giỏ trống hoặc có món không khả dụng sẽ không thể xác nhận đơn.
+            </p>
+          </div>
+
+          {/* Cột phải: tóm tắt đơn */}
           <OrderSummary
             items={orderItems}
             products={products}
@@ -499,8 +550,7 @@ function CheckoutPage() {
           />
         </div>
       </div>
-      <Link to="/cart" state={{ fromMenu: menuHref }} className="btn btn-outline-primary mt-3">Quay về giỏ hàng</Link>
-    </section>
+    </div>
   )
 }
 
