@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useAppSelector } from '@/app/hooks'
+import { usePageTitle } from '@/app/usePageTitle'
 import type { AppDispatch } from '@/app/store'
+import Breadcrumb from '@/components/Breadcrumb'
+import DishImage from '@/components/DishImage'
 import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { Link, useLocation, useRevalidator, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
+import '@/styles/menu.scss'
 
 const ALL_CATEGORIES = 'Tất cả'
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
@@ -61,8 +65,10 @@ function buildSearch(params: MenuQuery): string {
 }
 
 function MenuPage() {
+  usePageTitle('Thực đơn')
   const dispatch = useDispatch<AppDispatch>()
   const { products, status } = useAppSelector(selectCatalog)
+  const cartItems = useAppSelector((state) => state.cart.items)
   const loading = status === 'idle'
   const apiError = status === 'error'
   const { state: revalidationState, revalidate } = useRevalidator()
@@ -70,6 +76,8 @@ function MenuPage() {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   const [inputDraft, setInputDraft] = useState<{ key: string; text: string } | null>(null)
+  const [addedProduct, setAddedProduct] = useState<{ id: string; count: number }>()
+  const searchInput = useRef<HTMLInputElement>(null)
   const composing = useRef(false)
   const pendingSearch = useRef<{ key: string; search: string } | null>(null)
 
@@ -156,14 +164,26 @@ function MenuPage() {
     updateParams({ pageSize: value, page: 1 })
   }
 
+  function clearFilters() {
+    setInputDraft(null)
+    updateParams({ q: '', category: ALL_CATEGORIES, sort: 'default', page: 1, pageSize: DEFAULT_PAGE_SIZE })
+    searchInput.current?.focus()
+  }
+
+  function handleAddToCart(productId: string) {
+    dispatch(addToCart(productId))
+    const previousQuantity = cartItems.find((item) => item.productId === productId)?.quantity ?? 0
+    setAddedProduct({ id: productId, count: previousQuantity + 1 })
+  }
+
   return (
-    <section className="container py-4">
-      <div className="mb-4">
-        <h1 className="fw-bold">Thực đơn LunchGo</h1>
-        <p className="text-secondary">
-          Khám phá các món ăn và lựa chọn bữa trưa phù hợp với bạn.
-        </p>
-      </div>
+    <section className="menu-page">
+      <Breadcrumb items={[{ label: 'Thực đơn' }]} />
+      <header className="menu-page__heading">
+        <p className="menu-page__eyebrow">Thực đơn LunchGo</p>
+        <h1>Chọn món ngon cho hôm nay</h1>
+        <p>Tìm kiếm, lọc và chọn những món ăn quen thuộc cho bữa trưa của bạn.</p>
+      </header>
 
       {apiError && (
         <div className="alert alert-warning" role="alert">
@@ -174,9 +194,12 @@ function MenuPage() {
         </div>
       )}
 
-      <div className="row g-3 mb-4">
-        <div className="col-12 col-md-5">
+      <div className="menu-page__filters">
+        <div>
+          <label htmlFor="menu-search">Tìm món ăn hoặc nguyên liệu</label>
           <input
+            ref={searchInput}
+            id="menu-search"
             type="search"
             className="form-control"
             placeholder="Tìm món ăn hoặc nguyên liệu..."
@@ -187,27 +210,28 @@ function MenuPage() {
               composing.current = false
               handleKeywordChange(e.currentTarget.value)
             }}
-            aria-label="Tìm kiếm món ăn"
           />
         </div>
-        <div className="col-12 col-md-4">
+        <div>
+          <label htmlFor="menu-category">Danh mục</label>
           <select
+            id="menu-category"
             className="form-select"
             value={selectedCategory}
             onChange={(e) => handleCategoryChange(e.target.value)}
-            aria-label="Lọc theo danh mục"
           >
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
         </div>
-        <div className="col-12 col-md-3">
+        <div>
+          <label htmlFor="menu-sort">Sắp xếp</label>
           <select
+            id="menu-sort"
             className="form-select"
             value={sort}
             onChange={(e) => handleSortChange(e.target.value as SortOption)}
-            aria-label="Sắp xếp theo giá"
           >
             {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
               <option key={key} value={key}>{SORT_LABELS[key]}</option>
@@ -221,59 +245,65 @@ function MenuPage() {
       )}
 
       {!loading && !apiError && sortedProducts.length === 0 && (
-        <div className="alert alert-info" role="status">
-          Không tìm thấy món ăn phù hợp.
+        <div className="menu-page__empty">
+          <span className="menu-page__empty-icon" aria-hidden="true">⌕</span>
+          <div role="status">
+            <h2>Không tìm thấy món ăn phù hợp.</h2>
+            <p>Thử tìm tên món khác hoặc thay đổi danh mục.</p>
+          </div>
+          <button type="button" className="site-button site-button--primary" onClick={clearFilters}>
+            Xóa bộ lọc
+          </button>
         </div>
       )}
 
       {!loading && pagedProducts.length > 0 && (
-        <div className="row g-4">
-          {pagedProducts.map((product) => (
-            <div className="col-12 col-sm-6 col-lg-4 col-xl-3" key={product.id}>
-              <article className="card h-100 shadow-sm">
-                <img
-                  src={product.image}
-                  className="card-img-top"
-                  alt={product.name}
-                  style={{ height: 190, objectFit: 'cover' }}
-                  loading="lazy"
-                />
-                <div className="card-body d-flex flex-column">
-                  <span className="badge text-bg-light align-self-start mb-2">
-                    {product.category}
-                  </span>
-                  <h2 className="h5 card-title">{product.name}</h2>
-                  <p className="text-secondary small mb-2">
-                    {product.ingredients.slice(0, 3).join(', ') || 'Chưa có thông tin nguyên liệu'}
+        <>
+          <p className="menu-page__count">{sortedProducts.length} món trong thực đơn</p>
+          <div className="menu-page__grid">
+            {pagedProducts.map((product) => (
+              <article className="menu-dish" key={product.id}>
+                <DishImage src={product.image} name={product.name} className="menu-dish__image" loading="lazy" />
+                <div className="menu-dish__body">
+                  <p className="menu-page__eyebrow">{product.category}</p>
+                  <h2>{product.name}</h2>
+                  <p className="menu-dish__ingredients">
+                    {product.ingredients.slice(0, 3).join(' · ') || 'Chưa có thông tin nguyên liệu'}
                   </p>
-                  <p className="fw-bold text-danger mt-auto mb-3">
-                    {formatPrice(product.price)}
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-primary mb-2"
-                    onClick={() => dispatch(addToCart(product.id))}
-                  >
-                    <i className="bi bi-cart-plus me-2"></i>
-                    Thêm vào giỏ hàng
-                  </button>
-
-                  <Link
-                    className="btn btn-outline-primary"
-                    to={`/product/${encodeURIComponent(product.id)}`}
-                    state={{ fromMenu: `/menu${canonicalSearch}` }}
-                  >
-                    Xem chi tiết
-                  </Link>
+                  <div className="menu-dish__order">
+                    <p className="menu-dish__price">{formatPrice(product.price)}</p>
+                    <div className="menu-dish__actions">
+                      <button
+                        type="button"
+                        className="site-button site-button--primary"
+                        aria-label={product.isAvailable ? `Thêm vào giỏ: ${product.name}` : `Tạm hết món: ${product.name}`}
+                        onClick={() => handleAddToCart(product.id)}
+                        disabled={!product.isAvailable}
+                      >
+                        {product.isAvailable ? '+ Thêm vào giỏ' : 'Tạm hết món'}
+                      </button>
+                      <Link
+                        className="site-button"
+                        to={`/product/${encodeURIComponent(product.id)}`}
+                        state={{ fromMenu: `/menu${canonicalSearch}` }}
+                        aria-label={`Chi tiết món ${product.name}`}
+                      >
+                        Chi tiết <span aria-hidden="true">→</span>
+                      </Link>
+                    </div>
+                    <p className="action-status" role="status">
+                      {addedProduct?.id === product.id && `Đã thêm · ${addedProduct.count} phần ${product.name} trong giỏ.`}
+                    </p>
+                  </div>
                 </div>
               </article>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {!loading && !apiError && (
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mt-4">
+        <div className="menu-page__pagination">
           <p className="text-secondary mb-0">
             {sortedProducts.length === 0
               ? 'Hiển thị 0 / 0 món ăn'
@@ -325,7 +355,6 @@ function MenuPage() {
             <select
               id="page-size-select"
               className="form-select form-select-sm"
-              style={{ width: 'auto' }}
               value={pageSize}
               onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             >

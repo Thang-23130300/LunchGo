@@ -301,6 +301,8 @@
   aspect-ratio: 500 / 360;
   background: #e8ede5;
 
+  .dish-image-placeholder { height: 100%; }
+
   img {
     display: block;
     width: 100%;

@@ -1,14 +1,10 @@
-
 import type { LunchProduct } from '@/models/product'
-
-const createImage = (name: string) =>
-  `https://placehold.co/600x400?text=${encodeURIComponent(name)}`
 
 export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440001',
     name: 'Phở bò',
-    image: createImage('Pho Bo'),
+    image: '',
     category: 'Món nước',
     price: 45000,
     source: 'local',
@@ -18,7 +14,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440002',
     name: 'Phở gà',
-    image: createImage('Pho Ga'),
+    image: '',
     category: 'Món nước',
     price: 40000,
     source: 'local',
@@ -28,7 +24,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440003',
     name: 'Bún bò Huế',
-    image: createImage('Bun Bo Hue'),
+    image: '',
     category: 'Món nước',
     price: 45000,
     source: 'local',
@@ -38,7 +34,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440004',
     name: 'Bún thịt nướng',
-    image: createImage('Bun Thit Nuong'),
+    image: '',
     category: 'Món bún',
     price: 40000,
     source: 'local',
@@ -48,7 +44,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440005',
     name: 'Cơm tấm sườn',
-    image: createImage('Com Tam Suon'),
+    image: '',
     category: 'Cơm',
     price: 40000,
     source: 'local',
@@ -58,7 +54,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440006',
     name: 'Cơm gà',
-    image: createImage('Com Ga'),
+    image: '',
     category: 'Cơm',
     price: 40000,
     source: 'local',
@@ -68,7 +64,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440007',
     name: 'Cơm chiên trứng',
-    image: createImage('Com Chien Trung'),
+    image: '',
     category: 'Cơm',
     price: 30000,
     source: 'local',
@@ -78,7 +74,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440008',
     name: 'Cơm chiên hải sản',
-    image: createImage('Com Chien Hai San'),
+    image: '',
     category: 'Cơm',
     price: 45000,
     source: 'local',
@@ -88,7 +84,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440009',
     name: 'Bánh mì thịt',
-    image: createImage('Banh Mi Thit'),
+    image: '',
     category: 'Bánh mì',
     price: 25000,
     source: 'local',
@@ -98,7 +94,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440010',
     name: 'Bánh mì gà',
-    image: createImage('Banh Mi Ga'),
+    image: '',
     category: 'Bánh mì',
     price: 30000,
     source: 'local',
@@ -108,7 +104,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440011',
     name: 'Mì xào bò',
-    image: createImage('Mi Xao Bo'),
+    image: '',
     category: 'Món mì',
     price: 40000,
     source: 'local',
@@ -118,7 +114,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440012',
     name: 'Mì xào hải sản',
-    image: createImage('Mi Xao Hai San'),
+    image: '',
     category: 'Món mì',
     price: 45000,
     source: 'local',
@@ -128,7 +124,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440013',
     name: 'Hủ tiếu Nam Vang',
-    image: createImage('Hu Tieu Nam Vang'),
+    image: '',
     category: 'Món nước',
     price: 40000,
     source: 'local',
@@ -138,7 +134,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440014',
     name: 'Bún riêu',
-    image: createImage('Bun Rieu'),
+    image: '',
     category: 'Món nước',
     price: 35000,
     source: 'local',
@@ -148,7 +144,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440015',
     name: 'Gỏi cuốn',
-    image: createImage('Goi Cuon'),
+    image: '',
     category: 'Món cuốn',
     price: 30000,
     source: 'local',
@@ -158,7 +154,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440016',
     name: 'Bánh xèo',
-    image: createImage('Banh Xeo'),
+    image: '',
     category: 'Món bánh',
     price: 35000,
     source: 'local',
@@ -168,7 +164,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440017',
     name: 'Cháo gà',
-    image: createImage('Chao Ga'),
+    image: '',
     category: 'Món cháo',
     price: 30000,
     source: 'local',
@@ -178,7 +174,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440018',
     name: 'Trứng chiên',
-    image: createImage('Trung Chien'),
+    image: '',
     category: 'Món ăn',
     price: 20000,
     source: 'local',
@@ -188,7 +184,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440019',
     name: 'Gà chiên',
-    image: createImage('Ga Chien'),
+    image: '',
     category: 'Món ăn',
     price: 45000,
     source: 'local',
@@ -198,7 +194,7 @@ export const fallbackCatalog: LunchProduct[] = [
   {
     id: 'local:550e8400-e29b-41d4-a716-446655440020',
     name: 'Salad rau củ',
-    image: createImage('Salad Rau Cu'),
+    image: '',
     category: 'Món salad',
     price: 30000,
     source: 'local',

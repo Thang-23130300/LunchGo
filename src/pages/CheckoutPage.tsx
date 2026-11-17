@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useOutletContext, useRevalidator } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
+import { usePageTitle } from '@/app/usePageTitle'
+import Breadcrumb from '@/components/Breadcrumb'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import type { LunchProduct } from '@/models/product'
 import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
 import '../styles/checkout.scss'
@@ -40,7 +41,6 @@ const EMPTY_INFO: CustomerInfo = { customerName: '', phone: '', address: '', not
 
 type OrderSummaryProps = {
   items: OrderDraftItem[]
-  products: LunchProduct[]
   total: number
   canCheckout: boolean
   onIncrease: (productId: string) => void
@@ -49,62 +49,61 @@ type OrderSummaryProps = {
 }
 
 function OrderSummary({
-  items, products, total, canCheckout,
+  items, total, canCheckout,
   onIncrease, onDecrease, onRemove,
 }: OrderSummaryProps) {
   return (
-    <aside className="checkout-summary">
-      <p className="checkout-summary__title">Tóm tắt đơn hàng</p>
+    <aside className="checkout-summary" aria-labelledby="checkout-summary-title">
+      <h2 id="checkout-summary-title" className="checkout-summary__title">Tóm tắt đơn hàng</h2>
       <div className="checkout-summary__divider" />
 
       {items.length === 0 ? (
         <p className="checkout-summary__empty">Chưa có món nào trong giỏ.</p>
       ) : (
         <>
-          {items.map((item) => {
-            const product = products.find((p) => p.id === item.productId)
-            return (
-              <div key={item.productId} className="checkout-summary__item">
-                <div className="checkout-summary__item-header">
-                  <div>
-                    <p className="checkout-summary__item-name">{item.productName}</p>
-                    <p className="checkout-summary__item-price">{formatPrice(item.unitPrice)}</p>
-                  </div>
+          {items.map((item) => (
+            <div key={item.productId} className="checkout-summary__item">
+              <div className="checkout-summary__item-header">
+                <div>
+                  <p className="checkout-summary__item-name">{item.productName}</p>
+                  <p className="checkout-summary__item-price">{formatPrice(item.unitPrice)}</p>
+                </div>
+                <button
+                  type="button"
+                  className="checkout-summary__item-remove"
+                  onClick={() => onRemove(item.productId)}
+                  aria-label={`Xóa ${item.productName}`}
+                >
+                  Xóa
+                </button>
+              </div>
+              <div className="checkout-summary__item-controls">
+                <div className="checkout-summary__item-quantity">
                   <button
                     type="button"
-                    className="checkout-summary__item-remove"
-                    onClick={() => onRemove(item.productId)}
-                    aria-label={`Xóa ${item.productName}`}
+                    disabled={item.quantity <= 1}
+                    onClick={() => onDecrease(item.productId)}
+                    aria-label={`Giảm số lượng ${item.productName}`}
                   >
-                    Xóa
+                    −
+                  </button>
+                  <span aria-live="polite" aria-atomic="true">
+                    <span className="visually-hidden">{item.productName}, số lượng: </span>{item.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onIncrease(item.productId)}
+                    aria-label={`Tăng số lượng ${item.productName}`}
+                  >
+                    +
                   </button>
                 </div>
-                <div className="checkout-summary__item-controls">
-                  <div className="checkout-summary__item-quantity">
-                    <button
-                      type="button"
-                      disabled={item.quantity <= 1}
-                      onClick={() => onDecrease(item.productId)}
-                      aria-label="Giảm số lượng"
-                    >
-                      −
-                    </button>
-                    <span>{item.quantity}</span>
-                    <button
-                      type="button"
-                      onClick={() => onIncrease(item.productId)}
-                      aria-label="Tăng số lượng"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span className="checkout-summary__item-linetotal">
-                    {formatPrice(item.lineTotal)}
-                  </span>
-                </div>
+                <span className="checkout-summary__item-linetotal">
+                  {formatPrice(item.lineTotal)}
+                </span>
               </div>
-            )
-          })}
+            </div>
+          ))}
 
           <div className="checkout-summary__pricing">
             <div className="checkout-summary__row">
@@ -166,7 +165,7 @@ function FormField({
     value,
     autoComplete,
     placeholder,
-    'aria-required': required,
+    required,
     'aria-invalid': invalid || undefined,
     'aria-describedby': invalid ? `${id}-error` : undefined,
     className: `form-control${invalid ? ' is-invalid' : ''}`,
@@ -203,88 +202,89 @@ type OrderResultProps = {
 }
 
 function OrderResult({ order, menuHref }: OrderResultProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null)
+
+  useEffect(() => {
+    headingRef.current?.focus()
+  }, [])
+
   return (
     <div className="order-result">
       <div className="order-result__container">
-        {/* Breadcrumb */}
-        <nav className="order-result__breadcrumb" aria-label="Breadcrumb">
-          <Link to="/">Trang chủ</Link>
-          <span>/</span>
-          <Link to="/checkout">Thanh toán</Link>
-          <span>/</span>
-          Kết quả đơn hàng
-        </nav>
+        <Breadcrumb items={[{ label: 'Thanh toán' }, { label: 'Kết quả đơn hàng' }]} />
 
-        {/* Check icon */}
-        <div className="order-result__check-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        </div>
-
-        <h1 className="order-result__heading">Đặt hàng demo thành công!</h1>
-        <p className="order-result__thank-you">Cảm ơn bạn đã lựa chọn LunchGo.</p>
-
-        <div className="order-result__notice">
-          Đây là đơn hàng minh họa. Không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
-        </div>
-
-        {/* Chi tiết đơn hàng */}
-        <div className="order-result__card">
-          <div className="order-result__card-header">
-            <span className="order-result__card-label">Chi tiết đơn hàng</span>
-            <span className="order-result__order-id">{order.orderId}</span>
+        <div className="order-result__panel">
+          {/* Check icon */}
+          <div className="order-result__check-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
           </div>
 
-          <dl>
-            <div className="order-result__info-row">
-              <dt>Họ và tên</dt>
-              <dd>{order.customer.customerName}</dd>
+          <h1 ref={headingRef} tabIndex={-1} className="order-result__heading">Đặt hàng demo thành công!</h1>
+          <p className="order-result__thank-you">Cảm ơn bạn đã lựa chọn LunchGo.</p>
+
+          <div className="order-result__notice">
+            Đây là đơn hàng minh họa. Không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
+          </div>
+
+          {/* Chi tiết đơn hàng */}
+          <div className="order-result__card">
+            <div className="order-result__card-header">
+              <span className="order-result__card-label">Chi tiết đơn hàng</span>
+              <span className="order-result__order-id">{order.orderId}</span>
             </div>
-            <div className="order-result__info-row">
-              <dt>Điện thoại</dt>
-              <dd>{order.customer.phone}</dd>
-            </div>
-            <div className="order-result__info-row">
-              <dt>Địa chỉ</dt>
-              <dd>{order.customer.address}</dd>
-            </div>
-            {order.customer.note && (
+
+            <dl>
               <div className="order-result__info-row">
-                <dt>Ghi chú</dt>
-                <dd>{order.customer.note}</dd>
+                <dt>Họ và tên</dt>
+                <dd>{order.customer.customerName}</dd>
               </div>
-            )}
-            <div className="order-result__info-row">
-              <dt>Thanh toán</dt>
-              <dd>COD (demo)</dd>
+              <div className="order-result__info-row">
+                <dt>Điện thoại</dt>
+                <dd>{order.customer.phone}</dd>
+              </div>
+              <div className="order-result__info-row">
+                <dt>Địa chỉ</dt>
+                <dd>{order.customer.address}</dd>
+              </div>
+              {order.customer.note && (
+                <div className="order-result__info-row">
+                  <dt>Ghi chú</dt>
+                  <dd>{order.customer.note}</dd>
+                </div>
+              )}
+              <div className="order-result__info-row">
+                <dt>Thanh toán</dt>
+                <dd>COD (demo)</dd>
+              </div>
+            </dl>
+
+            <div className="order-result__items-divider" />
+
+            {order.items.map((item) => (
+              <div key={item.productId} className="order-result__item-row">
+                <span>{item.productName} × {item.quantity}</span>
+                <strong>{formatPrice(item.lineTotal)}</strong>
+              </div>
+            ))}
+
+            <div className="order-result__total-row">
+              <span>Tổng cộng</span>
+              <strong>{formatPrice(order.total)}</strong>
             </div>
-          </dl>
-
-          <div className="order-result__items-divider" />
-
-          {order.items.map((item) => (
-            <div key={item.productId} className="order-result__item-row">
-              <span>{item.productName} × {item.quantity}</span>
-              <strong>{formatPrice(item.lineTotal)}</strong>
-            </div>
-          ))}
-
-          <div className="order-result__total-row">
-            <span>Tổng cộng</span>
-            <strong>{formatPrice(order.total)}</strong>
           </div>
-        </div>
 
-        <div className="order-result__actions">
-          <Link to={menuHref} className="order-result__menu-btn">
-            Về thực đơn →
-          </Link>
-        </div>
+          <div className="order-result__actions">
+            <Link to={menuHref} className="order-result__menu-btn">
+              Về thực đơn →
+            </Link>
+          </div>
 
-        <p className="order-result__hint">
-          Lưu ý: kết quả đơn là state trong /checkout; tải lại trang sẽ không khôi phục kết quả.
-        </p>
+          <p className="order-result__hint">
+            Kết quả chỉ hiển thị đến khi bạn tải lại hoặc rời trang.
+          </p>
+        </div>
       </div>
     </div>
   )
@@ -296,15 +296,21 @@ function CheckoutPage() {
   const dispatch = useAppDispatch()
   const menuHref = useOutletContext<string>()
   const { lines, total, canCheckout } = useAppSelector(selectCartSummary)
-  const { products, status: catalogStatus } = useAppSelector(selectCatalog)
+  const { status: catalogStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const [info, setInfo] = useState<CustomerInfo>(EMPTY_INFO)
-  const [errors, setErrors] = useState<FormErrors>({})
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerInfo, boolean>>>({})
+  const [invalidAttempts, setInvalidAttempts] = useState(0)
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const hasConfirmed = useRef(false)
+  usePageTitle(confirmedOrder ? 'Kết quả đơn hàng' : 'Thanh toán')
+
+  useEffect(() => {
+    if (invalidAttempts) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+  }, [invalidAttempts])
 
   const orderItems = useMemo<OrderDraftItem[]>(() => {
     return lines.flatMap(({ product, productId, quantity, lineTotal }) => {
@@ -319,36 +325,26 @@ function CheckoutPage() {
     })
   }, [lines])
 
-  const activeErrors = useMemo<FormErrors>(() => {
-    if (Object.keys(touched).length === 0) return {}
-    const newErrors = validateForm(info)
-    const filtered: FormErrors = {}
-    for (const key of Object.keys(touched) as Array<keyof CustomerInfo>) {
-      if (newErrors[key]) filtered[key] = newErrors[key]
-    }
-    return filtered
-  }, [info, touched])
+  const formErrors = validateForm(info)
+
+  function visibleError(field: keyof CustomerInfo) {
+    return invalidAttempts > 0 || touched[field] ? formErrors[field] : undefined
+  }
 
   function handleChange(field: keyof CustomerInfo, value: string) {
     setInfo((prev) => ({ ...prev, [field]: value }))
-    setErrors((prev) => ({ ...prev, [field]: undefined }))
   }
 
   function handleBlur(field: keyof CustomerInfo) {
     setTouched((prev) => ({ ...prev, [field]: true }))
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!canCheckout || hasConfirmed.current) return
 
-    const allTouched: Partial<Record<keyof CustomerInfo, boolean>> = {
-      customerName: true, phone: true, address: true,
-    }
-    setTouched(allTouched)
-    const formErrors = validateForm(info)
     if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors)
+      setInvalidAttempts((attempts) => attempts + 1)
       return
     }
 
@@ -440,14 +436,7 @@ function CheckoutPage() {
   return (
     <div className="checkout-page">
       <div className="checkout-page__container">
-        {/* Breadcrumb */}
-        <nav className="checkout-page__breadcrumb" aria-label="Breadcrumb">
-          <Link to="/">Trang chủ</Link>
-          <span>/</span>
-          <Link to="/cart">Giỏ hàng</Link>
-          <span>/</span>
-          Thanh toán
-        </nav>
+        <Breadcrumb items={[{ label: 'Giỏ hàng', to: '/cart' }, { label: 'Thanh toán' }]} />
 
         <h1 className="checkout-page__title">Thanh toán</h1>
         <p className="checkout-page__subtitle">Điền thông tin giao hàng và xác nhận đơn hàng demo.</p>
@@ -455,7 +444,7 @@ function CheckoutPage() {
         <div className="checkout-page__layout">
           {/* Cột trái: form */}
           <div>
-            <form id="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Biểu mẫu thanh toán">
+            <form ref={formRef} id="checkout-form" onSubmit={handleSubmit} noValidate aria-label="Biểu mẫu thanh toán">
               <div className="checkout-form-card">
                 <h2 className="checkout-form-card__section-title">Thông tin giao hàng</h2>
                 <div className="checkout-form-card__divider" />
@@ -465,7 +454,7 @@ function CheckoutPage() {
                   label="Họ và tên"
                   required
                   value={info.customerName}
-                  error={errors.customerName ?? activeErrors.customerName}
+                  error={visibleError('customerName')}
                   autoComplete="name"
                   placeholder="Nguyễn Văn A"
                   onChange={(v) => handleChange('customerName', v)}
@@ -478,7 +467,7 @@ function CheckoutPage() {
                   type="tel"
                   inputMode="tel"
                   value={info.phone}
-                  error={errors.phone ?? activeErrors.phone}
+                  error={visibleError('phone')}
                   autoComplete="tel"
                   placeholder="0901 234 567"
                   onChange={(v) => handleChange('phone', v)}
@@ -489,7 +478,7 @@ function CheckoutPage() {
                   label="Địa chỉ giao hàng"
                   required
                   value={info.address}
-                  error={errors.address ?? activeErrors.address}
+                  error={visibleError('address')}
                   autoComplete="street-address"
                   placeholder="Số nhà, đường, phường, quận"
                   onChange={(v) => handleChange('address', v)}
@@ -541,7 +530,6 @@ function CheckoutPage() {
           {/* Cột phải: tóm tắt đơn */}
           <OrderSummary
             items={orderItems}
-            products={products}
             total={total}
             canCheckout={canCheckout}
             onIncrease={(id) => dispatch(increaseQuantity(id))}

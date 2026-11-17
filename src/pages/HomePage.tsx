@@ -1,6 +1,8 @@
 import { useEffect, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext } from 'react-router'
 import { useAppSelector } from '@/app/hooks'
+import { usePageTitle } from '@/app/usePageTitle'
+import DishImage from '@/components/DishImage'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import type { LunchProduct } from '@/models/product'
 import bunBoImage from '@/assets/home/bunbo.webp'
@@ -23,13 +25,10 @@ const orderSteps = [
 ]
 
 function SuggestedDish({ product, menuHref }: { product: LunchProduct; menuHref: string }) {
-  const catalogHasPhoto = product.image && !product.image.startsWith('https://placehold.co/')
-  const image = catalogHasPhoto ? product.image : bunBoImage
-
   return (
     <article className="home-dish">
       <div className="home-dish__art">
-        <img src={image} alt="" width="500" height="360" loading="lazy" />
+        <DishImage src={product.image} name={product.name} width={500} height={360} loading="lazy" />
       </div>
       <div className="home-dish__body">
         <p className="home-eyebrow">{product.category}</p>
@@ -51,6 +50,7 @@ function SuggestedDish({ product, menuHref }: { product: LunchProduct; menuHref:
 }
 
 function HomePage() {
+  usePageTitle()
   const { products, status } = useAppSelector(selectCatalog)
   const navigate = useNavigate()
   const { hash, key } = useLocation()
