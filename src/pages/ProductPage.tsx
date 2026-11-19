@@ -1,4 +1,4 @@
-
+import { getCustomizationProductId } from '@/data/customizationProductMap'
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useAppSelector } from '@/app/hooks'
@@ -56,7 +56,10 @@ function ProductPage() {
 
   const product = products.find((item) => item.id === id)
   const productGroups = optionGroups
-    .filter((group) => group.productId === product?.id)
+    .filter(
+      (group) =>
+        group.productId === getCustomizationProductId(product?.id ?? '')
+    )
     .map((group) => ({
       ...group,
       choices: options.filter(

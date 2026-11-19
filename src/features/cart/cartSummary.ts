@@ -1,4 +1,4 @@
-
+import { getCustomizationProductId } from '@/data/customizationProductMap'
 import { createSelector } from '@reduxjs/toolkit'
 import type { RootState } from '@/app/store'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
@@ -29,7 +29,8 @@ export const selectCartSummary = createSelector(
           (option): option is NonNullable<typeof option> =>
             option !== undefined &&
             option.isActive &&
-            groupsById.get(option.groupId)?.productId === item.productId
+            groupsById.get(option.groupId)?.productId ===
+            getCustomizationProductId(item.productId)
         )
 
       const optionsTotal = selectedOptions.reduce(
