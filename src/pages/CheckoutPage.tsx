@@ -3,11 +3,10 @@ import { Link, useOutletContext, useRevalidator } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
-import { selectCatalog } from '@/features/catalog/catalogSlice'
-import type { LunchProduct } from '@/models/product'
 import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
 import '../styles/checkout.scss'
+import { selectCatalog } from '@/features/catalog/catalogSlice'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -40,16 +39,15 @@ const EMPTY_INFO: CustomerInfo = { customerName: '', phone: '', address: '', not
 
 type OrderSummaryProps = {
   items: OrderDraftItem[]
-  products: LunchProduct[]
   total: number
   canCheckout: boolean
-  onIncrease: (productId: string) => void
-  onDecrease: (productId: string) => void
-  onRemove: (productId: string) => void
+  onIncrease: (itemId: string) => void
+  onDecrease: (itemId: string) => void
+  onRemove: (itemId: string) => void
 }
 
 function OrderSummary({
-  items, products, total, canCheckout,
+  items, total, canCheckout,
   onIncrease, onDecrease, onRemove,
 }: OrderSummaryProps) {
   return (
@@ -62,18 +60,29 @@ function OrderSummary({
       ) : (
         <>
           {items.map((item) => {
-            const product = products.find((p) => p.id === item.productId)
             return (
-              <div key={item.productId} className="checkout-summary__item">
+              <div key={item.itemId} className="checkout-summary__item">
                 <div className="checkout-summary__item-header">
                   <div>
                     <p className="checkout-summary__item-name">{item.productName}</p>
                     <p className="checkout-summary__item-price">{formatPrice(item.unitPrice)}</p>
+                    {item.selectedOptions.length > 0 && (
+                      <div className="checkout-summary__item-options">
+                        {item.selectedOptions.map((option) => (
+                          <p key={option.id}>
+                            {option.name}
+                            {option.additionalPrice > 0
+                              ? ` (+${formatPrice(option.additionalPrice)})`
+                              : ''}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
                     className="checkout-summary__item-remove"
-                    onClick={() => onRemove(item.productId)}
+                    onClick={() => onRemove(item.itemId)}
                     aria-label={`Xóa ${item.productName}`}
                   >
                     Xóa
@@ -84,7 +93,7 @@ function OrderSummary({
                     <button
                       type="button"
                       disabled={item.quantity <= 1}
-                      onClick={() => onDecrease(item.productId)}
+                      onClick={() => onDecrease(item.itemId)}
                       aria-label="Giảm số lượng"
                     >
                       −
@@ -92,7 +101,7 @@ function OrderSummary({
                     <span>{item.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => onIncrease(item.productId)}
+                      onClick={() => onIncrease(item.itemId)}
                       aria-label="Tăng số lượng"
                     >
                       +
@@ -264,8 +273,24 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
           <div className="order-result__items-divider" />
 
           {order.items.map((item) => (
-            <div key={item.productId} className="order-result__item-row">
-              <span>{item.productName} × {item.quantity}</span>
+            <div key={item.itemId} className="order-result__item-row">
+              <div>
+                <span>{item.productName} × {item.quantity}</span>
+
+                {item.selectedOptions.length > 0 && (
+                  <div className="order-result__item-options">
+                    {item.selectedOptions.map((option) => (
+                      <p key={option.id}>
+                        {option.name}
+                        {option.additionalPrice > 0
+                          ? ` (+${formatPrice(option.additionalPrice)})`
+                          : ''}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <strong>{formatPrice(item.lineTotal)}</strong>
             </div>
           ))}
@@ -296,7 +321,7 @@ function CheckoutPage() {
   const dispatch = useAppDispatch()
   const menuHref = useOutletContext<string>()
   const { lines, total, canCheckout } = useAppSelector(selectCartSummary)
-  const { products, status: catalogStatus } = useAppSelector(selectCatalog)
+  const { status: catalogStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const [info, setInfo] = useState<CustomerInfo>(EMPTY_INFO)
@@ -305,16 +330,22 @@ function CheckoutPage() {
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null)
 
   const hasConfirmed = useRef(false)
-
   const orderItems = useMemo<OrderDraftItem[]>(() => {
-    return lines.flatMap(({ product, productId, quantity, lineTotal }) => {
-      if (!product || lineTotal === null) return []
+    return lines.flatMap((line) => {
+      if (!line.product || line.lineTotal === null) return []
+
       return [{
-        productId,
-        productName: product.name,
-        quantity,
-        unitPrice: product.price,
-        lineTotal,
+        itemId: line.itemId ?? line.productId,
+        productId: line.productId,
+        productName: line.product.name,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        selectedOptions: line.selectedOptions.map((option) => ({
+          id: option.id,
+          name: option.name,
+          additionalPrice: option.additionalPrice,
+        })),
+        lineTotal: line.lineTotal,
       }]
     })
   }, [lines])
@@ -541,7 +572,6 @@ function CheckoutPage() {
           {/* Cột phải: tóm tắt đơn */}
           <OrderSummary
             items={orderItems}
-            products={products}
             total={total}
             canCheckout={canCheckout}
             onIncrease={(id) => dispatch(increaseQuantity(id))}
