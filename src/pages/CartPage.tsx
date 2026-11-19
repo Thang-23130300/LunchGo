@@ -17,6 +17,7 @@ function formatPrice(price: number) {
 
 function CartPage() {
   const dispatch = useAppDispatch()
+
   const {
     lines: cartDetails,
     totalQuantity,
@@ -61,46 +62,46 @@ function CartPage() {
     )
   }
 
+  if (cartDetails.length === 0) {
+    return (
+      <section className="cart-page">
+        <div className="cart-page__container cart-page__empty">
+          <div className="cart-page__empty-icon" aria-hidden="true">
+            🛒
+          </div>
 
-if (cartDetails.length === 0) {
-  return (
-    <section className="cart-page">
-      <div className="cart-page__container cart-page__empty">
-        <div className="cart-page__empty-icon" aria-hidden="true">
-          🛒
+          <p className="cart-page__empty-eyebrow">
+            LUNCHGO · GIỎ HÀNG
+          </p>
+
+          <h1 className="cart-page__title">
+            Giỏ hàng đang trống
+          </h1>
+
+          <p className="cart-page__empty-description">
+            Bạn chưa thêm món ăn nào. Hãy khám phá thực đơn và chọn
+            những món yêu thích nhé!
+          </p>
+
+          <Link
+            to={menuHref}
+            className="cart-page__button cart-page__button--primary"
+          >
+            Khám phá thực đơn
+          </Link>
         </div>
-
-        <p className="cart-page__empty-eyebrow">
-          LUNCHGO · GIỎ HÀNG
-        </p>
-
-        <h1 className="cart-page__title">
-          Giỏ hàng đang trống
-        </h1>
-
-        <p className="cart-page__empty-description">
-          Bạn chưa thêm món ăn nào. Hãy khám phá thực đơn và chọn
-          những món yêu thích nhé!
-        </p>
-
-        <Link
-          to={menuHref}
-          className="cart-page__button cart-page__button--primary"
-        >
-          Khám phá thực đơn
-        </Link>
-      </div>
-    </section>
-  )
-}
-
+      </section>
+    )
+  }
 
   return (
     <section className="cart-page">
       <div className="cart-page__container">
         <div className="cart-page__header">
           <div>
-            <p className="cart-page__eyebrow">LUNCHGO · ĐẶT MÓN YÊU THÍCH</p>
+            <p className="cart-page__eyebrow">
+              LUNCHGO · ĐẶT MÓN YÊU THÍCH
+            </p>
             <h1 className="cart-page__title">Giỏ hàng của bạn</h1>
             <p className="cart-page__subtitle">
               Bạn đang có {totalQuantity} sản phẩm trong giỏ hàng.
@@ -122,107 +123,136 @@ if (cartDetails.length === 0) {
               Danh sách món ăn
             </h2>
 
-            {cartDetails.map((item) => (
-              <article className="cart-item" key={item.productId}>
-                {item.product && item.lineTotal !== null ? (
-                  <>
-                    <div className="cart-item__image-wrapper">
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="cart-item__image"
-                      />
-                    </div>
+            {cartDetails.map((item) => {
+              const itemKey = item.itemId ?? item.productId
 
-                    <div className="cart-item__details">
-                      <div className="cart-item__top">
-                        <div>
-                          <h3 className="cart-item__name">
-                            {item.product.name}
-                          </h3>
-                          <p className="cart-item__price">
-                            {formatPrice(item.product.price)}
+              return (
+                <article className="cart-item" key={itemKey}>
+                  {item.product && item.lineTotal !== null ? (
+                    <>
+                      <div className="cart-item__image-wrapper">
+                        <img
+                          src={item.product.image}
+                          alt={item.product.name}
+                          className="cart-item__image"
+                        />
+                      </div>
+
+                      <div className="cart-item__details">
+                        <div className="cart-item__top">
+                          <div>
+                            <h3 className="cart-item__name">
+                              {item.product.name}
+                            </h3>
+
+                            <p className="cart-item__price">
+                              {formatPrice(item.unitPrice)}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            className="cart-item__remove"
+                            onClick={() =>
+                              dispatch(removeFromCart(itemKey))
+                            }
+                            aria-label={`Xóa ${item.product.name} khỏi giỏ hàng`}
+                          >
+                            Xóa
+                          </button>
+                        </div>
+
+                        {item.selectedOptions.length > 0 && (
+                          <div className="cart-item__options">
+                            <p>Tùy chọn đã chọn:</p>
+
+                            {item.selectedOptions.map((option) => (
+                              <div
+                                key={option.id}
+                                className="cart-item__option"
+                              >
+                                <span>{option.name}</span>
+                                <span>
+                                  {option.additionalPrice > 0
+                                    ? `+${formatPrice(option.additionalPrice)}`
+                                    : 'Miễn phí'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="cart-item__bottom">
+                          <div className="cart-item__quantity">
+                            <button
+                              type="button"
+                              disabled={item.quantity <= 1}
+                              onClick={() =>
+                                dispatch(decreaseQuantity(itemKey))
+                              }
+                              aria-label="Giảm số lượng"
+                            >
+                              −
+                            </button>
+
+                            <span>{item.quantity}</span>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                dispatch(increaseQuantity(itemKey))
+                              }
+                              aria-label="Tăng số lượng"
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <p className="cart-item__total">
+                            {formatPrice(item.lineTotal)}
                           </p>
                         </div>
-
-                        <button
-                          type="button"
-                          className="cart-item__remove"
-                          onClick={() =>
-                            dispatch(removeFromCart(item.productId))
-                          }
-                          aria-label={`Xóa ${item.product.name} khỏi giỏ hàng`}
-                        >
-                          Xóa
-                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="cart-item__unavailable">
+                      <div
+                        className="cart-item__unavailable-icon"
+                        aria-hidden="true"
+                      >
+                        !
                       </div>
 
-                      <div className="cart-item__bottom">
-                        <div className="cart-item__quantity">
-                          <button
-                            type="button"
-                            disabled={item.quantity <= 1}
-                            onClick={() =>
-                              dispatch(decreaseQuantity(item.productId))
-                            }
-                            aria-label="Giảm số lượng"
-                          >
-                            −
-                          </button>
+                      <div className="cart-item__unavailable-content">
+                        <span className="cart-item__unavailable-label">
+                          Không thể đặt món
+                        </span>
 
-                          <span>{item.quantity}</span>
+                        <h3>Sản phẩm không khả dụng</h3>
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              dispatch(increaseQuantity(item.productId))
-                            }
-                            aria-label="Tăng số lượng"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        <p className="cart-item__total">
-                          {formatPrice(item.lineTotal)}
+                        <p>
+                          Món ăn này hiện không còn trong thực đơn hoặc
+                          đã tạm hết. Vui lòng xóa sản phẩm để tiếp tục
+                          thanh toán.
                         </p>
+
+                        <small>Mã sản phẩm: {item.productId}</small>
                       </div>
+
+                      <button
+                        type="button"
+                        className="cart-item__remove"
+                        onClick={() =>
+                          dispatch(removeFromCart(itemKey))
+                        }
+                      >
+                        Xóa món
+                      </button>
                     </div>
-                  </>
-                ) : (
-                  
-<div className="cart-item__unavailable">
-  <div className="cart-item__unavailable-icon" aria-hidden="true">
-    !
-  </div>
-
-  <div className="cart-item__unavailable-content">
-    <span className="cart-item__unavailable-label">
-      Không thể đặt món
-    </span>
-
-    <h3>Sản phẩm không khả dụng</h3>
-
-    <p>
-      Món ăn này hiện không còn trong thực đơn hoặc đã tạm hết.
-      Vui lòng xóa sản phẩm để tiếp tục thanh toán.
-    </p>
-
-    <small>Mã sản phẩm: {item.productId}</small>
-  </div>
-
-  <button
-    type="button"
-    className="cart-item__remove"
-    onClick={() => dispatch(removeFromCart(item.productId))}
-  >
-    Xóa món
-  </button>
-</div>
-
-                )}
-              </article>
-            ))}
+                  )}
+                </article>
+              )
+            })}
 
             <Link to={menuHref} className="cart-page__continue">
               ← Tiếp tục mua hàng
