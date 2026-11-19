@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { useAppSelector } from '@/app/hooks'
 import type { AppDispatch } from '@/app/store'
-import {
-  addToCart,
-  increaseQuantity,
-} from '@/features/cart/cartSlice'
+import { addToCart } from '@/features/cart/cartSlice'
+import { optionGroups } from '@/data/optionGroups'
+import { options } from '@/data/options'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { useLocation, useNavigate, useParams, useRevalidator } from 'react-router'
 import '../styles/product-detail.scss'
@@ -47,7 +46,8 @@ function ShareButton({ productName }: ShareButtonProps) {
 function ProductPage() {
   const dispatch = useDispatch<AppDispatch>()
   const [quantity, setQuantity] = useState(1)
-
+  const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([])
+  const [optionError, setOptionError] = useState('')
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
@@ -55,16 +55,79 @@ function ProductPage() {
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const product = products.find((item) => item.id === id)
+  const productGroups = optionGroups
+    .filter((group) => group.productId === product?.id)
+    .map((group) => ({
+      ...group,
+      choices: options.filter(
+        (option) => option.groupId === group.id && option.isActive
+      ),
+    }))
+    .filter((group) => group.choices.length > 0)
 
+  const selectedOptions = options.filter(
+    (option) => selectedOptionIds.includes(option.id)
+  )
+
+  const additionalPrice = selectedOptions.reduce(
+    (sum, option) => sum + option.additionalPrice,
+    0
+  )
+
+  const unitPrice = (product?.price ?? 0) + additionalPrice
+  const totalPrice = unitPrice * quantity
   const fromMenu: unknown = (
     location.state as { fromMenu?: unknown } | null
   )?.fromMenu
 
   const menuHref =
     typeof fromMenu === 'string' &&
-    (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
+      (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
       ? fromMenu
       : '/menu'
+
+  function handleOptionChange(
+    groupId: string,
+    optionId: string,
+    selectionType: 'SINGLE' | 'MULTIPLE'
+  ) {
+    const group = productGroups.find((item) => item.id === groupId)
+
+    if (!group) return
+
+    const groupOptionIds = group.choices.map((item) => item.id)
+
+    setSelectedOptionIds((current) => {
+      if (selectionType === 'SINGLE') {
+        const otherOptions = current.filter(
+          (id) => !groupOptionIds.includes(id)
+        )
+
+        return current.includes(optionId)
+          ? otherOptions
+          : [...otherOptions, optionId]
+      }
+
+      if (current.includes(optionId)) {
+        return current.filter((id) => id !== optionId)
+      }
+
+      const selectedCount = current.filter(
+        (id) => groupOptionIds.includes(id)
+      ).length
+
+      if (selectedCount >= group.maxSelection) {
+        setOptionError(
+          `Nhóm "${group.name}" chỉ được chọn tối đa ${group.maxSelection}`
+        )
+        return current
+      }
+
+      return [...current, optionId]
+    })
+
+    setOptionError('')
+  }
 
   function handleBack() {
     navigate(menuHref)
@@ -73,13 +136,42 @@ function ProductPage() {
   function handleAddToCart() {
     if (!product || !product.isAvailable) return
 
-    dispatch(addToCart(product.id))
+    for (const group of productGroups) {
+      const selectedCount = group.choices.filter(
+        (option) => selectedOptionIds.includes(option.id)
+      ).length
 
-    for (let i = 1; i < quantity; i += 1) {
-      dispatch(increaseQuantity(product.id))
+      const minimum = Math.max(
+        group.minSelection,
+        group.isRequired ? 1 : 0
+      )
+
+      if (selectedCount < minimum) {
+        setOptionError(
+          `Nhóm "${group.name}" cần chọn ít nhất ${minimum} lựa chọn`
+        )
+        return
+      }
+
+      if (selectedCount > group.maxSelection) {
+        setOptionError(
+          `Nhóm "${group.name}" chỉ được chọn tối đa ${group.maxSelection}`
+        )
+        return
+      }
     }
 
+    dispatch(
+      addToCart({
+        productId: product.id,
+        quantity,
+        selectedOptionIds,
+      })
+    )
+
     setQuantity(1)
+    setSelectedOptionIds([])
+    setOptionError('')
   }
 
   if (status === 'idle') {
@@ -205,7 +297,66 @@ function ProductPage() {
                 <p>Chưa có thông tin nguyên liệu.</p>
               )}
             </div>
+            {productGroups.length > 0 && (
+              <div className="product-detail__customization">
+                <h2>TÙY CHỌN MÓN ĂN</h2>
 
+                {productGroups.map((group) => (
+                  <div key={group.id} className="product-detail__option-group">
+                    <h3>{group.name}</h3>
+
+                    <p>
+                      {group.isRequired ? 'Bắt buộc' : 'Không bắt buộc'}
+                      {' · '}
+                      Chọn từ {group.minSelection} đến {group.maxSelection}
+                    </p>
+
+                    {group.choices.map((option) => (
+                      <label
+                        key={option.id}
+                        className="product-detail__option"
+                      >
+                        <input
+                          type={
+                            group.selectionType === 'SINGLE'
+                              ? 'radio'
+                              : 'checkbox'
+                          }
+                          name={group.id}
+                          checked={selectedOptionIds.includes(option.id)}
+                          disabled={!product.isAvailable}
+                          onChange={() =>
+                            handleOptionChange(
+                              group.id,
+                              option.id,
+                              group.selectionType
+                            )
+                          }
+                        />
+
+                        <span>{option.name}</span>
+
+                        <span>
+                          {option.additionalPrice > 0
+                            ? `+${formatPrice(option.additionalPrice)}`
+                            : 'Miễn phí'}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ))}
+
+                {optionError && (
+                  <p role="alert" className="product-detail__option-error">
+                    {optionError}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="product-detail__total">
+              <strong>Tổng tiền: {formatPrice(totalPrice)}</strong>
+            </div>
             <div className="product-detail__quantity">
               <span className="product-detail__quantity-label">
                 Số lượng
