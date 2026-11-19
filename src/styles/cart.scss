@@ -166,3 +166,38 @@
   .cart-item__remove { grid-column: 2; justify-self: start; }
   .cart-summary { padding: 16px; }
 }
+/* Hiển thị tên tùy chọn và giá phụ thu */
+.cart-item {
+  &__options {
+    margin: 12px 0;
+
+    > p {
+      margin-bottom: 8px;
+      color: #475569;
+      font-size: 13px;
+      font-weight: 600;
+    }
+  }
+
+  &__option {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: #475569;
+
+    span:first-child {
+      flex: 1;
+      min-width: 0;
+    }
+
+    span:last-child {
+      flex-shrink: 0;
+      color: #b45309;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+}

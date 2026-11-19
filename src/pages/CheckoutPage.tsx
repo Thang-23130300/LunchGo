@@ -62,16 +62,28 @@ function OrderSummary({
       ) : (
         <>
           {items.map((item) => (
-            <div key={item.productId} className="checkout-summary__item">
+            <div key={item.itemId} className="checkout-summary__item">
               <div className="checkout-summary__item-header">
                 <div>
                   <p className="checkout-summary__item-name">{item.productName}</p>
                   <p className="checkout-summary__item-price">{formatPrice(item.unitPrice)}</p>
+                  {item.selectedOptions.length > 0 && (
+                    <div className="checkout-summary__item-options">
+                      {item.selectedOptions.map((option) => (
+                        <p key={option.id}>
+                          {option.name}
+                          {option.additionalPrice > 0
+                            ? ` (+${formatPrice(option.additionalPrice)})`
+                            : ''}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
                   className="checkout-summary__item-remove"
-                  onClick={() => onRemove(item.productId)}
+                  onClick={() => onRemove(item.itemId)}
                   aria-label={`Xóa ${item.productName}`}
                 >
                   Xóa
@@ -82,7 +94,7 @@ function OrderSummary({
                   <button
                     type="button"
                     disabled={item.quantity <= 1}
-                    onClick={() => onDecrease(item.productId)}
+                    onClick={() => onDecrease(item.itemId)}
                     aria-label={`Giảm số lượng ${item.productName}`}
                   >
                     −
@@ -92,7 +104,7 @@ function OrderSummary({
                   </span>
                   <button
                     type="button"
-                    onClick={() => onIncrease(item.productId)}
+                    onClick={() => onIncrease(item.itemId)}
                     aria-label={`Tăng số lượng ${item.productName}`}
                   >
                     +
@@ -263,8 +275,24 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
             <div className="order-result__items-divider" />
 
             {order.items.map((item) => (
-              <div key={item.productId} className="order-result__item-row">
-                <span>{item.productName} × {item.quantity}</span>
+              <div key={item.itemId} className="order-result__item-row">
+                <div>
+                  <span>{item.productName} × {item.quantity}</span>
+
+                  {item.selectedOptions.length > 0 && (
+                    <div className="order-result__item-options">
+                      {item.selectedOptions.map((option) => (
+                        <p key={option.id}>
+                          {option.name}
+                          {option.additionalPrice > 0
+                            ? ` (+${formatPrice(option.additionalPrice)})`
+                            : ''}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <strong>{formatPrice(item.lineTotal)}</strong>
               </div>
             ))}
@@ -313,14 +341,21 @@ function CheckoutPage() {
   }, [invalidAttempts])
 
   const orderItems = useMemo<OrderDraftItem[]>(() => {
-    return lines.flatMap(({ product, productId, quantity, lineTotal }) => {
-      if (!product || lineTotal === null) return []
+    return lines.flatMap((line) => {
+      if (!line.product || line.lineTotal === null) return []
+
       return [{
-        productId,
-        productName: product.name,
-        quantity,
-        unitPrice: product.price,
-        lineTotal,
+        itemId: line.itemId ?? line.productId,
+        productId: line.productId,
+        productName: line.product.name,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        selectedOptions: line.selectedOptions.map((option) => ({
+          id: option.id,
+          name: option.name,
+          additionalPrice: option.additionalPrice,
+        })),
+        lineTotal: line.lineTotal,
       }]
     })
   }, [lines])

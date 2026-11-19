@@ -121,3 +121,135 @@
   .product-detail__content { grid-template-columns: 1fr; }
   .product-detail__image { aspect-ratio: 4 / 3; }
 }
+/* Customization */
+.product-detail {
+  &__customization {
+    margin: 28px 0;
+    padding: 22px;
+    border: 1px solid #e7e2d9;
+    border-radius: 8px;
+    background: #fffaf2;
+
+    > h2 {
+      margin: 0 0 20px;
+      color: #92400e;
+      font-size: 15px;
+      font-weight: 750;
+      letter-spacing: 1px;
+    }
+  }
+
+  &__option-group {
+    margin-bottom: 22px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    h3 {
+      margin: 0 0 6px;
+      color: #1f2937;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    > p {
+      margin-bottom: 12px;
+      color: #64748b;
+      font-size: 12px;
+    }
+  }
+
+  &__option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e7e2d9;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    transition: 0.2s;
+
+    &:hover {
+      border-color: #b45309;
+      background: #fffdf8;
+    }
+
+    &:has(input:checked) {
+      border-color: #b45309;
+      background: #fef3c7;
+    }
+
+    input {
+      width: 17px;
+      height: 17px;
+      margin: 0;
+      accent-color: #b45309;
+      cursor: pointer;
+    }
+
+    span:nth-of-type(1) {
+      flex: 1;
+      color: #1f2937;
+      font-size: 14px;
+    }
+
+    span:nth-of-type(2) {
+      color: #b45309;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+
+  &__option-error {
+    margin: 12px 0 0;
+    padding: 12px;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    background: #fef2f2;
+    color: #b91c1c;
+    font-size: 13px;
+  }
+
+  &__total {
+    margin: 20px 0;
+    padding: 16px;
+    border: 1px solid #fcd34d;
+    border-radius: 6px;
+    background: #fffbeb;
+    color: #92400e;
+    font-size: 18px;
+
+    strong {
+      font-weight: 750;
+    }
+  }
+}
+
+@media (max-width: 420px) {
+  .product-detail {
+    &__customization {
+      padding: 14px;
+    }
+
+    &__option {
+      gap: 8px;
+      padding: 10px;
+
+      span:nth-of-type(1) {
+        font-size: 13px;
+      }
+
+      span:nth-of-type(2) {
+        font-size: 12px;
+      }
+    }
+
+    &__total {
+      font-size: 16px;
+    }
+  }
+}
