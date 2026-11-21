@@ -1,0 +1,158 @@
+{
+  "products": [
+    {
+      "id": "FOOD015",
+      "name": "Phở gà",
+      "type": "FOOD",
+      "categoryId": "CAT03",
+      "category": "Phở & hủ tiếu",
+      "description": "Bánh phở mềm kết hợp thịt gà thơm ngọt, nước dùng thanh nhẹ và hành lá.",
+      "price": 55000,
+      "image": "",
+      "imageFileName": "Pho_ga.jpg",
+      "imageSourceUrl": "https://fptshop.com.vn/tin-tuc/dien-may/cach-lam-pho-ga-vi-mien-bac-166881",
+      "source": "local",
+      "ingredients": [],
+      "isAvailable": true,
+      "isFeatured": false
+    },
+    {
+      "id": "FOOD016",
+      "name": "Hủ tiếu Nam Vang",
+      "type": "FOOD",
+      "categoryId": "CAT03",
+      "category": "Phở & hủ tiếu",
+      "description": "Hủ tiếu dai ngon ăn kèm tôm, thịt và các loại topping hấp dẫn, nước dùng đậm vị.",
+      "price": 60000,
+      "image": "",
+      "imageFileName": "Hu_tieu_Nam_Vang.jpg",
+      "imageSourceUrl": "https://vinwonders.com/vi/wonderpedia/news/hu-tieu-nam-vang-sai-gon/",
+      "source": "local",
+      "ingredients": [],
+      "isAvailable": true,
+      "isFeatured": false
+    }
+  ],
+  "categories": [
+    {
+      "id": "CAT01",
+      "name": "Cơm"
+    },
+    {
+      "id": "CAT02",
+      "name": "Món bún"
+    },
+    {
+      "id": "CAT03",
+      "name": "Phở & hủ tiếu"
+    },
+    {
+      "id": "CAT04",
+      "name": "Món mì"
+    },
+    {
+      "id": "CAT05",
+      "name": "Bánh mì"
+    },
+    {
+      "id": "CAT06",
+      "name": "Món cuốn"
+    },
+    {
+      "id": "CAT07",
+      "name": "Món bánh"
+    },
+    {
+      "id": "CAT08",
+      "name": "Món cháo"
+    },
+    {
+      "id": "CAT09",
+      "name": "Món salad"
+    },
+    {
+      "id": "CAT10",
+      "name": "Đồ uống"
+    }
+  ],
+  "optionGroups": [
+    {
+      "id": "GRP-FOOD015-01",
+      "productId": "FOOD015",
+      "name": "Thêm topping",
+      "selectionType": "MULTIPLE",
+      "isRequired": false,
+      "minSelection": 0,
+      "maxSelection": 5
+    },
+    {
+      "id": "GRP-FOOD016-01",
+      "productId": "FOOD016",
+      "name": "Cách dùng",
+      "selectionType": "SINGLE",
+      "isRequired": false,
+      "minSelection": 0,
+      "maxSelection": 1
+    },
+    {
+      "id": "GRP-FOOD016-02",
+      "productId": "FOOD016",
+      "name": "Thêm topping",
+      "selectionType": "MULTIPLE",
+      "isRequired": false,
+      "minSelection": 0,
+      "maxSelection": 5
+    }
+  ],
+  "options": [
+    {
+      "id": "OPT-FOOD015-01",
+      "groupId": "GRP-FOOD015-01",
+      "name": "Thêm thịt gà",
+      "additionalPrice": 15000,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD015-02",
+      "groupId": "GRP-FOOD015-01",
+      "name": "Thêm trứng",
+      "additionalPrice": 10000,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD015-03",
+      "groupId": "GRP-FOOD015-01",
+      "name": "Thêm bánh phở",
+      "additionalPrice": 10000,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD016-01",
+      "groupId": "GRP-FOOD016-01",
+      "name": "Hủ tiếu nước",
+      "additionalPrice": 0,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD016-02",
+      "groupId": "GRP-FOOD016-01",
+      "name": "Hủ tiếu khô",
+      "additionalPrice": 0,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD016-03",
+      "groupId": "GRP-FOOD016-02",
+      "name": "Thêm tôm",
+      "additionalPrice": 15000,
+      "isActive": true
+    },
+    {
+      "id": "OPT-FOOD016-04",
+      "groupId": "GRP-FOOD016-02",
+      "name": "Thêm trứng cút",
+      "additionalPrice": 10000,
+      "isActive": true
+    }
+  ]
+}

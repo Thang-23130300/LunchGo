@@ -172,7 +172,10 @@ function MenuPage() {
 
   function handleAddToCart(productId: string) {
     dispatch(addToCart(productId))
-    const previousQuantity = cartItems.find((item) => item.productId === productId)?.quantity ?? 0
+    const previousQuantity = cartItems.reduce(
+      (sum, item) => item.productId === productId ? sum + item.quantity : sum,
+      0,
+    )
     setAddedProduct({ id: productId, count: previousQuantity + 1 })
   }
 
