@@ -13,7 +13,7 @@ export interface Nutrition {
   fat?: number
 }
 
-export interface LunchProduct {
+export interface Product {
   id: string
   name: string
   image: string
@@ -24,4 +24,12 @@ export interface LunchProduct {
   calories?: number
   nutrition?: Nutrition
   isAvailable: boolean
+  type?: 'FOOD' | 'DRINK'
+  categoryId?: string
+  description?: string
+  isFeatured?: boolean
+  imageFileName?: string
+  imageSourceUrl?: string
 }
+
+export type LunchProduct = Product

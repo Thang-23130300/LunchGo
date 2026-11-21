@@ -19,10 +19,9 @@ yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
 
-# Local environment and secrets; keep a shareable example
+# Local environment and secrets
 .env
 .env.*
-!.env.example
 *.local
 
 # Editor and operating system files

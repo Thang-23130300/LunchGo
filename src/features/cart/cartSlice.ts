@@ -1,14 +1,8 @@
 
 import { createSlice, nanoid, type PayloadAction } from '@reduxjs/toolkit'
+import type { CartItem } from '@/models/cart'
 
-export type CartItem = {
-  productId: string
-  quantity: number
-  // ID riêng cho từng dòng sản phẩm trong giỏ
-  itemId?: string
-  // Danh sách ID tùy chọn đã chọn
-  selectedOptionIds?: string[]
-}
+export type { CartItem } from '@/models/cart'
 
 export type AddToCartPayload = {
   productId: string

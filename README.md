@@ -84,7 +84,29 @@ Quan hệ dữ liệu là `products.categoryId → categories.id`, `optionGroups
 
 `image` để trống để giao diện dùng ảnh mặc định `src/assets/home/bunbo.webp`. `imageFileName` và `imageSourceUrl` lưu thông tin ảnh trong Excel để nhập ảnh sau. `ingredients` là mảng rỗng vì Excel chưa có cột nguyên liệu riêng. `Có`/`Không` được chuyển thành boolean cho `isAvailable` và `isFeatured`.
 
-`db.json` là nguồn dữ liệu cho API. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn được giao diện import trực tiếp, còn catalog được nạp qua `loadDemoCatalog`. Chuyển giao diện sang lấy dữ liệu từ API là bước tích hợp tiếp theo. Khi tích hợp, dùng ID Excel `FOOD015`, `FOOD016` xuyên suốt và chuyển các nơi đang import JSON sang đọc collection tương ứng. Bản API mẫu chỉ đưa vào các nhóm và lựa chọn thuộc hai sản phẩm đã nhập, để các liên kết đều có sản phẩm tương ứng.
+`db.json` là nguồn dữ liệu cho API. Catalog được lấy qua `src/api/products.ts`, nạp vào Redux bởi `createCatalogLoader` hiện có. Menu, chi tiết món, giỏ và Checkout dùng chung dữ liệu trong Redux. Router dùng URL `/product/:id` với ID Excel như `FOOD015`, `FOOD016`. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn cung cấp dữ liệu tùy chọn cho giao diện.
+
+### API Service và type dùng chung
+
+Tạo tệp `.env.local` tại thư mục gốc dự án và đặt địa chỉ JSON Server. Khởi động lại Vite sau khi sửa biến môi trường.
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:3001
+```
+
+Khi biến chưa được đặt, Service dùng `http://127.0.0.1:3001`. Các hàm trong `@/api` trả về Promise và nhận `AbortSignal` tùy chọn để hủy yêu cầu. GET chi tiết trả về `null` khi server trả HTTP 404. Các lỗi HTTP khác, lỗi mạng và JSON lỗi được chuyển cho bên gọi xử lý. Loader catalog hiện hiển thị trạng thái lỗi và hỗ trợ thử lại khi API chưa chạy.
+
+```ts
+import { getProducts, getProductById, getCategories, getCategoryById } from '@/api'
+import type { Product, Category, OptionGroup, Option, SelectedOption, CartItem, Order } from '@/models'
+
+const products = await getProducts()
+const product = await getProductById('FOOD015')
+const categories = await getCategories()
+const category = await getCategoryById('CAT03')
+```
+
+Type chuẩn được định nghĩa trong `src/models/` và export tại `src/models/index.ts`. `Product` dùng các trường sẵn có của catalog cùng metadata tùy chọn từ Excel. `CartItem` lưu `productId`, `quantity`, `itemId` và `selectedOptionIds`, tương thích giỏ LocalStorage cũ. `SelectedOption` là bản chụp ID, tên và giá thêm của lựa chọn tại thời điểm đặt hàng. `Order` chứa `orderId`, thông tin người nhận, các `OrderItem`, tổng tiền, phương thức thanh toán và thời gian tạo. Các tên cũ `LunchProduct`, `CustomizationOption`, `ConfirmedOrder`, `OrderDraftItem`, `OrderDraftOption` tham chiếu về type chuẩn để các import hiện có tiếp tục dùng được.
 
 ## Store và giao diện
 
@@ -128,7 +150,7 @@ Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` 
 - `src/models`: kiểu dữ liệu; `src/services`: kết nối và xử lý dữ liệu.
 - `src/styles`: style dùng chung; `src/utils`: hàm tiện ích; `src/data`: dữ liệu demo/fallback.
 
-Các thư mục mới dùng `.gitkeep` để Git lưu được khi còn trống. Alias `@/` trỏ tới `src/`, ví dụ `import App from '@/App.tsx'`; đã cấu hình đồng bộ trong TypeScript và Vite.
+Alias `@/` trỏ tới `src/`, ví dụ `import App from '@/App.tsx'`; đã cấu hình đồng bộ trong TypeScript và Vite.
 
 ## Quy ước Git và PR 
 
@@ -136,7 +158,7 @@ Các thư mục mới dùng `.gitkeep` để Git lưu được khi còn trống.
 - Tên nhánh: `feat/<task>-<ten>`, `fix/<task>-<ten>` hoặc `docs/<task>-<ten>`, ví dụ `feat/l04-folder-structure`.
 - Mỗi PR chỉ làm một task; không tự sửa code của thành viên khác ngoài phạm vi đã thống nhất.
 - PR ghi Task ID, thay đổi chính, kết quả kiểm thử và ảnh giao diện nếu có. Khi đổi code, chạy `npm run lint` và `npm run build`; mục không áp dụng cần ghi lý do.
-- Không commit `node_modules/`, `dist/`, `.env` thật, token hoặc secret. Giữ `package-lock.json`; `.env.example` chỉ chứa giá trị mẫu.
+- Không commit `node_modules/`, `dist/`, `.env` thật, token hoặc secret. Giữ `package-lock.json`.
 
 ## Quy ước commit 
 

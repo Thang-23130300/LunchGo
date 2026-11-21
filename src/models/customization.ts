@@ -13,10 +13,14 @@ export interface OptionGroup {
 }
 
 // Một lựa chọn trong nhóm
-export interface CustomizationOption {
+export interface Option {
   id: string;
   groupId: string;
   name: string;
   additionalPrice: number;
   isActive: boolean;
 }
+
+export type CustomizationOption = Option
+
+export type SelectedOption = Pick<Option, 'id' | 'name' | 'additionalPrice'>
