@@ -19,11 +19,12 @@ function CustomerLayout() {
 
   return (
     <div className="site-shell">
+      <a className="site-skip-link" href="#noi-dung-chinh">Bỏ qua đến nội dung chính</a>
       <SiteHeader menuHref={menuHref} cartQuantity={cartQuantity} />
-      <main className={isHome ? 'page-content' : 'page-content page-content--inner'}>
+      <main id="noi-dung-chinh" tabIndex={-1} className={isHome ? 'page-content' : 'page-content page-content--inner'}>
         <Outlet context={menuHref} />
       </main>
-      <SiteFooter menuHref={menuHref} />
+      <SiteFooter menuHref={menuHref} compact={!isHome} />
     </div>
   )
 }

@@ -1,4 +1,5 @@
 
+import { nanoid } from '@reduxjs/toolkit'
 import type { CartItem, CartState } from '@/features/cart/cartSlice'
 import {
   getBrowserStorage,
@@ -75,9 +76,18 @@ export function loadCart(
     return { items: [] }
   }
 
+  // Old carts stored at most one line per product before options were added.
+  const legacyProductIds = saved.items
+    .filter((item) => item.itemId === undefined && item.selectedOptionIds === undefined)
+    .map((item) => item.productId)
+
+  if (new Set(legacyProductIds).size !== legacyProductIds.length) {
+    return { items: [] }
+  }
+
   const items = saved.items.map((item) => ({
     ...item,
-    itemId: item.itemId ?? crypto.randomUUID(),
+    itemId: item.itemId ?? nanoid(),
     selectedOptionIds: item.selectedOptionIds ?? [],
   }))
 

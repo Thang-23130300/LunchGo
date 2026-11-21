@@ -7,7 +7,10 @@ import { addToCart } from '@/features/cart/cartSlice'
 import { optionGroups } from '@/data/optionGroups'
 import { options } from '@/data/options'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import { useLocation, useNavigate, useParams, useRevalidator } from 'react-router'
+import { Link, useLocation, useOutletContext, useParams, useRevalidator } from 'react-router'
+import { usePageTitle } from '@/app/usePageTitle'
+import Breadcrumb from '@/components/Breadcrumb'
+import DishImage from '@/components/DishImage'
 import '../styles/product-detail.scss'
 
 function formatPrice(price: number): string {
@@ -19,42 +22,58 @@ type ShareButtonProps = {
 }
 
 function ShareButton({ productName }: ShareButtonProps) {
-  const location = useLocation()
-  const [copied, setCopied] = useState(false)
+  const [result, setResult] = useState<'copied' | 'failed'>()
 
-  function handleCopy() {
-    const canonical = location.pathname + location.search
-
-    navigator.clipboard.writeText(canonical).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+  async function handleCopy() {
+    const url = new URL(window.location.href)
+    url.hash = ''
+    try {
+      await navigator.clipboard.writeText(url.href)
+      setResult('copied')
+    } catch {
+      setResult('failed')
+    }
   }
 
   return (
-    <button
-      type="button"
-      className="product-detail__share"
-      onClick={handleCopy}
-      aria-label={`Sao chép liên kết món ${productName}`}
-    >
-      {copied ? '✓ Đã sao chép' : '↗ Sao chép liên kết'}
-    </button>
+    <div className="product-detail__share-control">
+      <button
+        type="button"
+        className="site-button product-detail__share"
+        onClick={handleCopy}
+        aria-label={`Sao chép liên kết món ${productName}`}
+      >
+        Sao chép liên kết
+      </button>
+      <p className="action-status" role="status">
+        {result === 'copied' && 'Đã sao chép liên kết.'}
+        {result === 'failed' && 'Không thể sao chép. Bạn có thể dùng địa chỉ trên thanh trình duyệt.'}
+      </p>
+    </div>
   )
 }
 
 function ProductPage() {
+  const { id } = useParams<{ id: string }>()
+  return <ProductDetails key={id} id={id} />
+}
+
+function ProductDetails({ id }: { id: string | undefined }) {
   const dispatch = useDispatch<AppDispatch>()
   const [quantity, setQuantity] = useState(1)
+  const [addedProduct, setAddedProduct] = useState<{ id: string; count: number }>()
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([])
   const [optionError, setOptionError] = useState('')
-  const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
-  const location = useLocation()
+  const { pathname, search } = useLocation()
+  const menuHref = useOutletContext<string>()
   const { products, status } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const product = products.find((item) => item.id === id)
+  usePageTitle(product?.name ?? 'Chi tiết món')
+  const cartQuantity = useAppSelector((state) =>
+    state.cart.items.reduce((sum, item) => item.productId === id ? sum + item.quantity : sum, 0)
+  )
   const productGroups = optionGroups
     .filter(
       (group) =>
@@ -68,7 +87,7 @@ function ProductPage() {
     }))
     .filter((group) => group.choices.length > 0)
 
-  const selectedOptions = options.filter(
+  const selectedOptions = productGroups.flatMap((group) => group.choices).filter(
     (option) => selectedOptionIds.includes(option.id)
   )
 
@@ -79,15 +98,6 @@ function ProductPage() {
 
   const unitPrice = (product?.price ?? 0) + additionalPrice
   const totalPrice = unitPrice * quantity
-  const fromMenu: unknown = (
-    location.state as { fromMenu?: unknown } | null
-  )?.fromMenu
-
-  const menuHref =
-    typeof fromMenu === 'string' &&
-      (fromMenu === '/menu' || fromMenu.startsWith('/menu?'))
-      ? fromMenu
-      : '/menu'
 
   function handleOptionChange(
     groupId: string,
@@ -100,40 +110,24 @@ function ProductPage() {
 
     const groupOptionIds = group.choices.map((item) => item.id)
 
+    const groupSelection = selectedOptionIds.filter((id) => groupOptionIds.includes(id))
+    if (selectionType === 'MULTIPLE' && !groupSelection.includes(optionId) &&
+        groupSelection.length >= group.maxSelection) {
+      setOptionError(
+        `Nhóm "${group.name}" chỉ được chọn tối đa ${group.maxSelection}`
+      )
+      return
+    }
+
     setSelectedOptionIds((current) => {
       if (selectionType === 'SINGLE') {
-        const otherOptions = current.filter(
-          (id) => !groupOptionIds.includes(id)
-        )
-
-        return current.includes(optionId)
-          ? otherOptions
-          : [...otherOptions, optionId]
+        return [...current.filter((id) => !groupOptionIds.includes(id)), optionId]
       }
-
-      if (current.includes(optionId)) {
-        return current.filter((id) => id !== optionId)
-      }
-
-      const selectedCount = current.filter(
-        (id) => groupOptionIds.includes(id)
-      ).length
-
-      if (selectedCount >= group.maxSelection) {
-        setOptionError(
-          `Nhóm "${group.name}" chỉ được chọn tối đa ${group.maxSelection}`
-        )
-        return current
-      }
-
-      return [...current, optionId]
+      return current.includes(optionId)
+        ? current.filter((id) => id !== optionId)
+        : [...current, optionId]
     })
-
     setOptionError('')
-  }
-
-  function handleBack() {
-    navigate(menuHref)
   }
 
   function handleAddToCart() {
@@ -171,7 +165,7 @@ function ProductPage() {
         selectedOptionIds,
       })
     )
-
+    setAddedProduct({ id: product.id, count: cartQuantity + quantity })
     setQuantity(1)
     setSelectedOptionIds([])
     setOptionError('')
@@ -203,7 +197,7 @@ function ProductPage() {
             {status === 'error' && (
               <button
                 type="button"
-                className="product-detail__button product-detail__button--primary"
+                className="site-button site-button--primary"
                 disabled={revalidationState === 'loading'}
                 onClick={() => void revalidate()}
               >
@@ -211,13 +205,12 @@ function ProductPage() {
               </button>
             )}
 
-            <button
-              type="button"
-              className="product-detail__button product-detail__button--secondary"
-              onClick={handleBack}
+            <Link
+              to={menuHref}
+              className="site-button"
             >
               ← Quay lại thực đơn
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -227,23 +220,18 @@ function ProductPage() {
   return (
     <section className="product-detail">
       <div className="product-detail__container">
-        <div className="product-detail__breadcrumb">
-          <button
-            type="button"
-            className="product-detail__back"
-            onClick={handleBack}
-          >
-            ← Quay lại thực đơn
-          </button>
+        <Breadcrumb items={[{ label: 'Thực đơn', to: menuHref }, { label: product.name }]} />
+        <div className="product-detail__actions">
+          <Link className="product-detail__back" to={menuHref}>← Quay lại thực đơn</Link>
 
-          <ShareButton productName={product.name} />
+          <ShareButton key={pathname + search} productName={product.name} />
         </div>
 
         <div className="product-detail__content">
           <div className="product-detail__image-wrapper">
-            <img
+            <DishImage
               src={product.image}
-              alt={product.name}
+              name={product.name}
               className="product-detail__image"
             />
           </div>
@@ -253,10 +241,6 @@ function ProductPage() {
               {product.category}
             </span>
 
-            <p className="product-detail__eyebrow">
-              LUNCHGO · MÓN NGON MỖI NGÀY
-            </p>
-
             <h1 className="product-detail__name">
               {product.name}
             </h1>
@@ -265,6 +249,7 @@ function ProductPage() {
               {formatPrice(product.price)}
             </p>
 
+            <div className="product-detail__divider" />
             <p
               className={
                 product.isAvailable
@@ -275,6 +260,7 @@ function ProductPage() {
               <span className="product-detail__availability-dot" />
               {product.isAvailable ? 'Đang có sẵn' : 'Tạm hết món'}
             </p>
+            <p className="product-detail__source">Nguồn dữ liệu: {product.source}</p>
 
             {product.calories !== undefined && (
               <p className="product-detail__calories">
@@ -290,10 +276,7 @@ function ProductPage() {
               {product.ingredients.length > 0 ? (
                 <ul>
                   {product.ingredients.map((ingredient, index) => (
-                    <li key={`${ingredient}-${index}`}>
-                      <span className="product-detail__ingredient-dot" />
-                      {ingredient}
-                    </li>
+                    <li key={`${ingredient}-${index}`}>{ingredient}</li>
                   ))}
                 </ul>
               ) : (
@@ -394,17 +377,21 @@ function ProductPage() {
 
             <button
               type="button"
-              className="product-detail__add-button"
+              className="site-button site-button--primary product-detail__add-button"
               disabled={!product.isAvailable}
               onClick={handleAddToCart}
             >
               + Thêm {quantity > 1 ? `${quantity} sản phẩm` : 'vào giỏ hàng'}
             </button>
 
-            <p className="product-detail__source">
-              Nguồn dữ liệu: {product.source}
+            <p className="action-status" role="status">
+              {addedProduct?.id === product.id && `Đã thêm ${product.name} · ${addedProduct.count} phần trong giỏ.`}
             </p>
           </div>
+        </div>
+        <div className="page-note">
+          <strong>Điều hướng quay lại thực đơn</strong>
+          <p>Các bộ lọc trước đó được giữ khi bạn quay lại từ chi tiết món.</p>
         </div>
       </div>
     </section>

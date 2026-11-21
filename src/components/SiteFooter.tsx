@@ -1,7 +1,31 @@
 import { Link } from 'react-router'
 
-function SiteFooter({ menuHref }: { menuHref: string }) {
+function SiteFooter({ menuHref, compact }: { menuHref: string; compact: boolean }) {
   const navigationState = { fromMenu: menuHref }
+
+  if (compact) {
+    return (
+      <footer className="site-footer site-footer--compact">
+        <div className="site-container">
+          <div className="site-footer__bar">
+            <div>
+              <Link className="site-brand" to="/" aria-label="LunchGo" state={navigationState}>
+                <span>Lunch <span className="site-brand__accent">Go.</span></span>
+              </Link>
+              <p className="site-footer__description">Đồ án Front End · Website đặt món ăn trưa demo.</p>
+            </div>
+            <nav aria-label="Điều hướng cuối trang">
+              <Link to="/" state={navigationState}>Trang chủ</Link>
+              <Link to={menuHref}>Thực đơn</Link>
+              <Link to="/cart" state={navigationState}>Giỏ hàng</Link>
+              <Link to="/checkout" state={navigationState}>Thanh toán</Link>
+            </nav>
+          </div>
+          <small className="site-footer__copyright">© 2026 LunchGo · Không thu tiền thật.</small>
+        </div>
+      </footer>
+    )
+  }
 
   return (
     <footer className="site-footer">

@@ -61,7 +61,30 @@ npm run preview
 
 `npm ci` cài theo `package-lock.json`. `npm test` kiểm tra lưu giỏ, cache, loader catalog và tổng tiền dùng chung. `build` kiểm tra TypeScript trước khi xuất vào `dist/`. `preview` chạy bản build tại URL được in trong terminal.
 
-Ứng dụng hiện chưa cần biến môi trường hoặc backend.
+### API dữ liệu mẫu
+
+Chạy JSON Server `1.0.0-beta.15` trong một terminal riêng. Phiên bản được cố định trong `package.json` và `package-lock.json`.
+
+```sh
+npm run api
+```
+
+API phục vụ `db.json` tại `http://127.0.0.1:3001`. Chạy giao diện bằng `npm run dev` trong terminal khác.
+
+| Collection | URL | Dữ liệu mẫu |
+| --- | --- | --- |
+| products | `/products` | 2 sản phẩm |
+| categories | `/categories` | 10 danh mục |
+| optionGroups | `/optionGroups` | 3 nhóm tùy chọn |
+| options | `/options` | 7 lựa chọn |
+
+Hai sản phẩm được nhập từ sheet **Nhập dữ liệu**, dòng 24–25 của `LunchGo_Dataset_V1.xlsx`: `FOOD015` — Phở gà, 55.000đ và `FOOD016` — Hủ tiếu Nam Vang, 60.000đ. Danh mục lấy từ sheet **Phân công & hướng dẫn**, dòng 20–29. Các nhóm và lựa chọn tương ứng được đối chiếu với dòng 105–111 và hai file JSON hiện có. Giá cơ bản dùng VND. Giá thêm trong Excel được nhân 1.000 theo xác nhận của người cung cấp dữ liệu.
+
+Quan hệ dữ liệu là `products.categoryId → categories.id`, `optionGroups.productId → products.id` và `options.groupId → optionGroups.id`. Có thể kiểm tra `/products/FOOD015`, `/optionGroups?productId=FOOD016` và `/options?groupId=GRP-FOOD016-02`.
+
+`image` để trống để giao diện dùng ảnh mặc định `src/assets/home/bunbo.webp`. `imageFileName` và `imageSourceUrl` lưu thông tin ảnh trong Excel để nhập ảnh sau. `ingredients` là mảng rỗng vì Excel chưa có cột nguyên liệu riêng. `Có`/`Không` được chuyển thành boolean cho `isAvailable` và `isFeatured`.
+
+`db.json` là nguồn dữ liệu cho API. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn được giao diện import trực tiếp, còn catalog được nạp qua `loadDemoCatalog`. Chuyển giao diện sang lấy dữ liệu từ API là bước tích hợp tiếp theo. Khi tích hợp, dùng ID Excel `FOOD015`, `FOOD016` xuyên suốt và chuyển các nơi đang import JSON sang đọc collection tương ứng. Bản API mẫu chỉ đưa vào các nhóm và lựa chọn thuộc hai sản phẩm đã nhập, để các liên kết đều có sản phẩm tương ứng.
 
 ## Store và giao diện
 
