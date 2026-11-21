@@ -67,7 +67,12 @@ function buildSearch(params: MenuQuery): string {
 function MenuPage() {
   usePageTitle('Thực đơn')
   const dispatch = useDispatch<AppDispatch>()
-  const { products, status } = useAppSelector(selectCatalog)
+  const {
+    products,
+    status,
+    categories: catalogCategories,
+    categoriesStatus,
+  } = useAppSelector(selectCatalog)
   const cartItems = useAppSelector((state) => state.cart.items)
   const loading = status === 'idle'
   const apiError = status === 'error'
@@ -91,8 +96,19 @@ function MenuPage() {
   const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize) ? rawPageSize : DEFAULT_PAGE_SIZE
 
   const categories = useMemo(
-    () => [ALL_CATEGORIES, ...new Set(products.map((p) => p.category))],
-    [products],
+    () => [
+      ALL_CATEGORIES,
+      ...new Set(
+        categoriesStatus === 'ready'
+          ? catalogCategories.map((category) => category.name)
+          : products.map((product) => product.category),
+      ),
+    ],
+    [catalogCategories, categoriesStatus, products],
+  )
+  const categoryNamesById = useMemo(
+    () => new Map(catalogCategories.map((category) => [category.id, category.name])),
+    [catalogCategories],
   )
   const rawCategory = searchParams.get('category')
   const selectedCategory = categories.find((category) => category === rawCategory) ?? ALL_CATEGORIES
@@ -104,11 +120,12 @@ function MenuPage() {
         !kw ||
         normalizeKeyword(p.name).toLowerCase().includes(kw) ||
         p.ingredients.some((ing) => normalizeKeyword(ing).toLowerCase().includes(kw))
+      const categoryName = categoryNamesById.get(p.categoryId ?? '') ?? p.category
       const matchesCategory =
-        selectedCategory === ALL_CATEGORIES || p.category === selectedCategory
+        selectedCategory === ALL_CATEGORIES || categoryName === selectedCategory
       return matchesKeyword && matchesCategory
     })
-  }, [products, keyword, selectedCategory])
+  }, [products, keyword, selectedCategory, categoryNamesById])
 
   const sortedProducts = useMemo(
     () => sortProducts(filteredProducts, sort),
@@ -260,7 +277,7 @@ function MenuPage() {
         </div>
       )}
 
-      {!loading && pagedProducts.length > 0 && (
+      {!loading && !apiError && pagedProducts.length > 0 && (
         <>
           <p className="menu-page__count">{sortedProducts.length} món trong thực đơn</p>
           <div className="menu-page__grid">
@@ -268,10 +285,10 @@ function MenuPage() {
               <article className="menu-dish" key={product.id}>
                 <DishImage src={product.image} name={product.name} className="menu-dish__image" loading="lazy" />
                 <div className="menu-dish__body">
-                  <p className="menu-page__eyebrow">{product.category}</p>
+                  <p className="menu-page__eyebrow">{categoryNamesById.get(product.categoryId ?? '') ?? product.category}</p>
                   <h2>{product.name}</h2>
                   <p className="menu-dish__ingredients">
-                    {product.ingredients.slice(0, 3).join(' · ') || 'Chưa có thông tin nguyên liệu'}
+                    {product.description || product.ingredients.slice(0, 3).join(' · ') || 'Chưa có thông tin nguyên liệu'}
                   </p>
                   <div className="menu-dish__order">
                     <p className="menu-dish__price">{formatPrice(product.price)}</p>

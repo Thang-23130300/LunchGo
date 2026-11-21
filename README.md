@@ -73,18 +73,63 @@ API phục vụ `db.json` tại `http://127.0.0.1:3001`. Chạy giao diện bằ
 
 | Collection | URL | Dữ liệu mẫu |
 | --- | --- | --- |
-| products | `/products` | 2 sản phẩm |
+| products | `/products` | 48 sản phẩm — 36 món ăn và 12 nước uống |
 | categories | `/categories` | 10 danh mục |
 | optionGroups | `/optionGroups` | 3 nhóm tùy chọn |
 | options | `/options` | 7 lựa chọn |
 
-Hai sản phẩm được nhập từ sheet **Nhập dữ liệu**, dòng 24–25 của `LunchGo_Dataset_V1.xlsx`: `FOOD015` — Phở gà, 55.000đ và `FOOD016` — Hủ tiếu Nam Vang, 60.000đ. Danh mục lấy từ sheet **Phân công & hướng dẫn**, dòng 20–29. Các nhóm và lựa chọn tương ứng được đối chiếu với dòng 105–111 và hai file JSON hiện có. Giá cơ bản dùng VND. Giá thêm trong Excel được nhân 1.000 theo xác nhận của người cung cấp dữ liệu.
+Toàn bộ 48 sản phẩm được nhập từ sheet **Nhập dữ liệu**, dòng 6–53 của `LunchGo_Dataset_V1.xlsx`. ID sản phẩm giữ nguyên `FOOD001`–`FOOD036` và `DRINK001`–`DRINK012`. Mười danh mục lấy từ sheet **Phân công & hướng dẫn**, dòng 20–29, giữ ID `CAT01`–`CAT10` và đổi tên theo quy ước ASCII đã thống nhất. Giá cơ bản dùng VND. Ba nhóm và bảy lựa chọn đã nhập cho `FOOD015`, `FOOD016` được giữ trong API, với giá thêm đã nhân 1.000 theo xác nhận của người cung cấp dữ liệu.
 
 Quan hệ dữ liệu là `products.categoryId → categories.id`, `optionGroups.productId → products.id` và `options.groupId → optionGroups.id`. Có thể kiểm tra `/products/FOOD015`, `/optionGroups?productId=FOOD016` và `/options?groupId=GRP-FOOD016-02`.
 
-`image` để trống để giao diện dùng ảnh mặc định `src/assets/home/bunbo.webp`. `imageFileName` và `imageSourceUrl` lưu thông tin ảnh trong Excel để nhập ảnh sau. `ingredients` là mảng rỗng vì Excel chưa có cột nguyên liệu riêng. `Có`/`Không` được chuyển thành boolean cho `isAvailable` và `isFeatured`.
+`image` là đường dẫn `/products/<tên danh mục>/<tên file ảnh>`, tương ứng với file trong `src/assets/products/`. Toàn bộ 48 ảnh đã được kiểm tra tên file và định dạng JPG/PNG theo Excel. `imageFileName` giữ chính xác tên và đuôi ảnh gốc, `imageSourceUrl` giữ nguồn ảnh trong Excel. `ingredients` là mảng rỗng vì Excel chưa có cột nguyên liệu riêng. `Có`/`Không` được chuyển thành boolean cho `isAvailable` và `isFeatured`.
 
-`db.json` là nguồn dữ liệu cho API. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn được giao diện import trực tiếp, còn catalog được nạp qua `loadDemoCatalog`. Chuyển giao diện sang lấy dữ liệu từ API là bước tích hợp tiếp theo. Khi tích hợp, dùng ID Excel `FOOD015`, `FOOD016` xuyên suốt và chuyển các nơi đang import JSON sang đọc collection tương ứng. Bản API mẫu chỉ đưa vào các nhóm và lựa chọn thuộc hai sản phẩm đã nhập, để các liên kết đều có sản phẩm tương ứng.
+### Thư mục ảnh sản phẩm
+
+Ảnh nằm trong `src/assets/products/<tên danh mục>/`, dùng tên danh mục ASCII trong `categories` và giữ nguyên tên file ảnh theo Excel.
+
+| Danh mục | categoryId | Số ảnh |
+| --- | --- | --- |
+| Com | CAT01 | 5 |
+| Bun | CAT02 | 4 |
+| PhoHuTieu | CAT03 | 4 |
+| Mi | CAT04 | 4 |
+| BanhMi | CAT05 | 3 |
+| Cuon | CAT06 | 4 |
+| Banh | CAT07 | 4 |
+| Chao | CAT08 | 4 |
+| Salad | CAT09 | 4 |
+| DoUong | CAT10 | 12 |
+
+Ví dụ `FOOD015` có ảnh `src/assets/products/PhoHuTieu/Pho_ga.jpg`, trường `image` là `/products/PhoHuTieu/Pho_ga.jpg`. Thêm hoặc thay ảnh trong đúng thư mục danh mục, sau đó đặt `image` theo đường dẫn đó. JSON Server phục vụ `src/assets` qua tùy chọn `--static src/assets`. Component `DishImage` dùng `import.meta.glob` để Vite đưa các ảnh vào bản build và phân giải URL tương ứng trên giao diện. Build lại giao diện sau khi thêm ảnh để đưa file mới vào bản triển khai.
+
+`db.json` là nguồn dữ liệu cho API. Catalog được lấy qua `src/api/products.ts`, nạp vào Redux bởi `createCatalogLoader` hiện có. Menu, chi tiết món, giỏ và Checkout dùng chung dữ liệu trong Redux. Router dùng URL `/product/:id` với ID Excel như `FOOD015`, `FOOD016`. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn cung cấp dữ liệu tùy chọn cho giao diện.
+
+Home lấy danh mục từ `/categories` qua cùng loader và Redux, hiển thị đủ 10 danh mục. Khu vực nổi bật hiển thị tối đa 4 sản phẩm có `isFeatured: true` và `isAvailable: true`, theo thứ tự API. Bốn món được chọn là `FOOD001`, `FOOD006`, `FOOD010`, `FOOD013`. Thẻ món hiển thị tên, mô tả, giá và ảnh từ API. Tìm kiếm và liên kết danh mục mở Menu với query tương ứng, liên kết món mở `/product/:id`. Sản phẩm và danh mục có trạng thái tải/lỗi riêng, nút thử lại chỉ nạp lại phần bị lỗi.
+
+Menu dùng toàn bộ sản phẩm từ `/products` và danh mục từ `/categories`. Bộ lọc đối chiếu `categoryId` để theo tên danh mục hiện tại, kể cả danh mục chưa có món; khi API danh mục bị lỗi, dùng tên danh mục trong sản phẩm. Tìm kiếm theo tên hoặc nguyên liệu, không phân biệt chữ hoa/thường và chuẩn hóa Unicode tiếng Việt. Sắp xếp theo giá, phân trang 12/24/48 món và tổng số kết quả được tính từ dữ liệu hiện có. Thay tìm kiếm, danh mục, sắp xếp hoặc số món mỗi trang sẽ về trang 1. URL lưu bộ lọc, giữ được khi F5, Back/Forward và quay lại từ chi tiết món. Sau khi sửa dữ liệu API, tải lại trang để nạp dữ liệu mới; trang vượt quá tổng số trang sẽ tự chuyển về trang cuối hợp lệ.
+
+### API Service và type dùng chung
+
+Tạo tệp `.env.local` tại thư mục gốc dự án và đặt địa chỉ JSON Server. Khởi động lại Vite sau khi sửa biến môi trường.
+
+```dotenv
+VITE_API_BASE_URL=http://127.0.0.1:3001
+```
+
+Khi biến chưa được đặt, Service dùng `http://127.0.0.1:3001`. Các hàm trong `@/api` trả về Promise và nhận `AbortSignal` tùy chọn để hủy yêu cầu. GET chi tiết trả về `null` khi server trả HTTP 404. Các lỗi HTTP khác, lỗi mạng và JSON lỗi được chuyển cho bên gọi xử lý. Loader catalog hiện hiển thị trạng thái lỗi và hỗ trợ thử lại khi API chưa chạy.
+
+```ts
+import { getProducts, getProductById, getCategories, getCategoryById } from '@/api'
+import type { Product, Category, OptionGroup, Option, SelectedOption, CartItem, Order } from '@/models'
+
+const products = await getProducts()
+const product = await getProductById('FOOD015')
+const categories = await getCategories()
+const category = await getCategoryById('CAT03')
+```
+
+Type chuẩn được định nghĩa trong `src/models/` và export tại `src/models/index.ts`. `Product` dùng các trường sẵn có của catalog cùng metadata tùy chọn từ Excel. `CartItem` lưu `productId`, `quantity`, `itemId` và `selectedOptionIds`, tương thích giỏ LocalStorage cũ. `SelectedOption` là bản chụp ID, tên và giá thêm của lựa chọn tại thời điểm đặt hàng. `Order` chứa `orderId`, thông tin người nhận, các `OrderItem`, tổng tiền, phương thức thanh toán và thời gian tạo. Các tên cũ `LunchProduct`, `CustomizationOption`, `ConfirmedOrder`, `OrderDraftItem`, `OrderDraftOption` tham chiếu về type chuẩn để các import hiện có tiếp tục dùng được.
 
 ## Store và giao diện
 
@@ -128,7 +173,7 @@ Khi triển khai lên hosting, cần cấu hình SPA fallback về `index.html` 
 - `src/models`: kiểu dữ liệu; `src/services`: kết nối và xử lý dữ liệu.
 - `src/styles`: style dùng chung; `src/utils`: hàm tiện ích; `src/data`: dữ liệu demo/fallback.
 
-Các thư mục mới dùng `.gitkeep` để Git lưu được khi còn trống. Alias `@/` trỏ tới `src/`, ví dụ `import App from '@/App.tsx'`; đã cấu hình đồng bộ trong TypeScript và Vite.
+Alias `@/` trỏ tới `src/`, ví dụ `import App from '@/App.tsx'`; đã cấu hình đồng bộ trong TypeScript và Vite.
 
 ## Quy ước Git và PR 
 
@@ -136,7 +181,7 @@ Các thư mục mới dùng `.gitkeep` để Git lưu được khi còn trống.
 - Tên nhánh: `feat/<task>-<ten>`, `fix/<task>-<ten>` hoặc `docs/<task>-<ten>`, ví dụ `feat/l04-folder-structure`.
 - Mỗi PR chỉ làm một task; không tự sửa code của thành viên khác ngoài phạm vi đã thống nhất.
 - PR ghi Task ID, thay đổi chính, kết quả kiểm thử và ảnh giao diện nếu có. Khi đổi code, chạy `npm run lint` và `npm run build`; mục không áp dụng cần ghi lý do.
-- Không commit `node_modules/`, `dist/`, `.env` thật, token hoặc secret. Giữ `package-lock.json`; `.env.example` chỉ chứa giá trị mẫu.
+- Không commit `node_modules/`, `dist/`, `.env` thật, token hoặc secret. Giữ `package-lock.json`.
 
 ## Quy ước commit 
 

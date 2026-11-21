@@ -1,13 +1,10 @@
 import type { LunchProduct } from '@/models/product'
-import { loadDemoCatalog } from '@/services/demoCatalogSource'
+import { getProductById, getProducts } from '@/api/products'
 
 export { CATALOG_CACHE_KEY, CATALOG_VERSION } from '@/services/demoCatalogSource'
 
 export type CatalogSource = () => Promise<LunchProduct[]>
 
-export const getCatalog = loadDemoCatalog
+export const getCatalog: CatalogSource = () => getProducts()
 
-export async function getCatalogProduct(id: string): Promise<LunchProduct | null> {
-  const products = await getCatalog()
-  return products.find((item) => item.id === id) ?? null
-}
+export const getCatalogProduct = getProductById

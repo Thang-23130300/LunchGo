@@ -1,5 +1,5 @@
 import { useEffect, type FormEvent } from 'react'
-import { Link, useLocation, useNavigate, useOutletContext } from 'react-router'
+import { Link, useLocation, useNavigate, useOutletContext, useRevalidator } from 'react-router'
 import { useAppSelector } from '@/app/hooks'
 import { usePageTitle } from '@/app/usePageTitle'
 import DishImage from '@/components/DishImage'
@@ -8,8 +8,6 @@ import type { LunchProduct } from '@/models/product'
 import bunBoImage from '@/assets/home/bunbo.webp'
 import '@/styles/home.scss'
 
-const categoryOrder = ['Cơm', 'Món nước', 'Món bún', 'Bánh mì']
-const featuredCategories = ['Món nước', 'Cơm', 'Món bún', 'Bánh mì']
 const priceFormatter = new Intl.NumberFormat('vi-VN')
 
 const benefits = [
@@ -33,7 +31,7 @@ function SuggestedDish({ product, menuHref }: { product: LunchProduct; menuHref:
       <div className="home-dish__body">
         <p className="home-eyebrow">{product.category}</p>
         <h3>{product.name}</h3>
-        <p className="home-dish__ingredients">{product.ingredients.join(', ')}</p>
+        <p className="home-dish__ingredients">{product.description || product.ingredients.join(', ')}</p>
         <div className="home-dish__bottom">
           <strong>{priceFormatter.format(product.price)}đ</strong>
           <Link
@@ -51,20 +49,13 @@ function SuggestedDish({ product, menuHref }: { product: LunchProduct; menuHref:
 
 function HomePage() {
   usePageTitle()
-  const { products, status } = useAppSelector(selectCatalog)
+  const { products, status, categories, categoriesStatus } = useAppSelector(selectCatalog)
+  const { state: revalidationState, revalidate } = useRevalidator()
   const navigate = useNavigate()
   const { hash, key } = useLocation()
   const menuHref = useOutletContext<string>()
 
-  const catalogCategories = new Set(products.map(({ category }) => category))
-  const categories = [...new Set([...categoryOrder, ...catalogCategories])]
-    .filter((category) => catalogCategories.has(category))
-    .slice(0, 4)
-  const availableProducts = products.filter(({ isAvailable }) => isAvailable)
-  const featured = featuredCategories
-    .map((category) => availableProducts.find((product) => product.category === category))
-    .filter((product) => product !== undefined)
-  const suggestions = [...new Set([...featured, ...availableProducts])].slice(0, 4)
+  const featuredProducts = products.filter((product) => product.isFeatured && product.isAvailable).slice(0, 4)
 
   useEffect(() => {
     if (hash === '#cach-dat-mon' || hash === '#mon-goi-y') {
@@ -98,7 +89,7 @@ function HomePage() {
               </Link>
             </div>
             <p className="home-hero__fact">
-              {products.length > 0 && `${products.length} món demo · `}Chọn món theo danh mục và mức giá
+              {status === 'ready' && `${products.length} món trong thực đơn · `}Chọn món theo danh mục và mức giá
             </p>
           </div>
           <div className="home-hero__art">
@@ -130,12 +121,22 @@ function HomePage() {
             </form>
             <Link className="home-text-link" to="/menu">Xem toàn bộ thực đơn <span aria-hidden="true">↗</span></Link>
           </div>
-          {categories.length > 0 && (
+          {categoriesStatus === 'idle' && <p role="status">Đang tải danh mục...</p>}
+          {categoriesStatus === 'error' && (
+            <div className="home-data-error">
+              <p role="alert">Không thể tải danh mục.</p>
+              <button className="home-button" type="button" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+                Thử lại danh mục
+              </button>
+            </div>
+          )}
+          {categoriesStatus === 'ready' && categories.length === 0 && <p role="status">Hiện chưa có danh mục.</p>}
+          {categoriesStatus === 'ready' && categories.length > 0 && (
             <ul className="home-grid home-categories">
               {categories.map((category) => (
-                <li key={category}>
-                  <Link className="home-category" to={`/menu?${new URLSearchParams({ category })}`}>
-                    <strong>{category}</strong>
+                <li key={category.id}>
+                  <Link className="home-category" to={`/menu?${new URLSearchParams({ category: category.name })}`}>
+                    <strong>{category.name}</strong>
                     <span aria-hidden="true">↗</span>
                   </Link>
                 </li>
@@ -148,17 +149,24 @@ function HomePage() {
           <p className="home-eyebrow">Gợi ý cho bữa trưa</p>
           <div className="home-featured__heading">
             <div>
-              <h2 id="home-featured-title">Món ngon bạn có thể chọn</h2>
-              <p className="home-section-description">Một vài món ăn có sẵn trong thực đơn LunchGo.</p>
+              <h2 id="home-featured-title">Sản phẩm nổi bật</h2>
+              <p className="home-section-description">Những món ăn nổi bật có sẵn trong thực đơn LunchGo.</p>
             </div>
             <Link className="home-text-link" to="/menu">Xem tất cả món <span aria-hidden="true">↗</span></Link>
           </div>
-          {status === 'idle' && <p role="status">Đang tải món gợi ý...</p>}
-          {status === 'error' && <p role="status">Không thể tải món gợi ý.</p>}
-          {status === 'ready' && suggestions.length === 0 && <p>Hiện chưa có món gợi ý.</p>}
-          {suggestions.length > 0 && (
+          {status === 'idle' && <p role="status">Đang tải sản phẩm nổi bật...</p>}
+          {status === 'error' && (
+            <div className="home-data-error">
+              <p role="alert">Không thể tải sản phẩm nổi bật.</p>
+              <button className="home-button" type="button" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+                Thử lại sản phẩm
+              </button>
+            </div>
+          )}
+          {status === 'ready' && featuredProducts.length === 0 && <p role="status">Hiện chưa có sản phẩm nổi bật.</p>}
+          {status === 'ready' && featuredProducts.length > 0 && (
             <div className="home-grid">
-              {suggestions.map((product) => <SuggestedDish key={product.id} product={product} menuHref={menuHref} />)}
+              {featuredProducts.map((product) => <SuggestedDish key={product.id} product={product} menuHref={menuHref} />)}
             </div>
           )}
           <Link className="home-button home-featured__more" to="/menu">
