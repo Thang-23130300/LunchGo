@@ -8,8 +8,8 @@ import type { LunchProduct } from '@/models/product'
 import bunBoImage from '@/assets/home/bunbo.webp'
 import '@/styles/home.scss'
 
-const categoryOrder = ['Cơm', 'Món nước', 'Món bún', 'Bánh mì']
-const featuredCategories = ['Món nước', 'Cơm', 'Món bún', 'Bánh mì']
+const categoryOrder = ['Com', 'PhoHuTieu', 'Bun', 'BanhMi']
+const featuredCategories = ['PhoHuTieu', 'Com', 'Bun', 'BanhMi']
 const priceFormatter = new Intl.NumberFormat('vi-VN')
 
 const benefits = [
