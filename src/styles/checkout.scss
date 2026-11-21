@@ -63,6 +63,18 @@
     color: #a32124;
   }
 
+  &__submit-error {
+    margin-top: 16px;
+    padding: 14px 18px;
+    border: 1px solid #fecaca;
+    border-radius: 2px;
+    background: #fef2f2;
+    color: #a32124;
+
+    strong { display: block; margin-bottom: 4px; }
+    p { margin: 0; font-size: 14px; }
+  }
+
   &__button {
     display: inline-block;
     padding: 12px 20px;
@@ -327,6 +339,11 @@
     font-size: 14px;
   }
 
+  &__discount {
+    color: #b45309;
+    font-weight: 600;
+  }
+
   &__total {
     display: flex;
     justify-content: space-between;
@@ -533,6 +550,18 @@
       font-size: 22px;
       font-weight: 750;
     }
+  }
+
+  &__discount-row {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 8px;
+
+    span, strong { font-size: 15px; font-weight: 600; color: #b45309; }
+  }
+
+  &__final {
+    border-top: 2px solid var(--site-deep);
   }
 
   &__actions {
