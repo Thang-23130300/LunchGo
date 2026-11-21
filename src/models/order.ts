@@ -22,6 +22,9 @@ export interface Order {
   orderId: string
   customer: Omit<OrderDraft, 'paymentMethod'>
   items: OrderItem[]
+  subtotal: number
+  discount: number
+  voucherCode: string | null
   total: number
   paymentMethod: OrderDraft['paymentMethod']
   createdAt: string
