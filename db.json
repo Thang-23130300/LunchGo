@@ -14,7 +14,7 @@
       "source": "local",
       "ingredients": [],
       "isAvailable": true,
-      "isFeatured": false
+      "isFeatured": true
     },
     {
       "id": "FOOD002",
@@ -94,7 +94,7 @@
       "source": "local",
       "ingredients": [],
       "isAvailable": true,
-      "isFeatured": false
+      "isFeatured": true
     },
     {
       "id": "FOOD007",
@@ -158,7 +158,7 @@
       "source": "local",
       "ingredients": [],
       "isAvailable": true,
-      "isFeatured": false
+      "isFeatured": true
     },
     {
       "id": "FOOD011",
@@ -270,7 +270,7 @@
       "source": "local",
       "ingredients": [],
       "isAvailable": true,
-      "isFeatured": false
+      "isFeatured": true
     },
     {
       "id": "FOOD014",

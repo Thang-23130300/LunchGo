@@ -105,6 +105,10 @@ Ví dụ `FOOD015` có ảnh `src/assets/products/PhoHuTieu/Pho_ga.jpg`, trườ
 
 `db.json` là nguồn dữ liệu cho API. Catalog được lấy qua `src/api/products.ts`, nạp vào Redux bởi `createCatalogLoader` hiện có. Menu, chi tiết món, giỏ và Checkout dùng chung dữ liệu trong Redux. Router dùng URL `/product/:id` với ID Excel như `FOOD015`, `FOOD016`. `src/data/options.json` và `src/data/optionGroups.json` hiện vẫn cung cấp dữ liệu tùy chọn cho giao diện.
 
+Home lấy danh mục từ `/categories` qua cùng loader và Redux, hiển thị đủ 10 danh mục. Khu vực nổi bật hiển thị tối đa 4 sản phẩm có `isFeatured: true` và `isAvailable: true`, theo thứ tự API. Bốn món được chọn là `FOOD001`, `FOOD006`, `FOOD010`, `FOOD013`. Thẻ món hiển thị tên, mô tả, giá và ảnh từ API. Tìm kiếm và liên kết danh mục mở Menu với query tương ứng, liên kết món mở `/product/:id`. Sản phẩm và danh mục có trạng thái tải/lỗi riêng, nút thử lại chỉ nạp lại phần bị lỗi.
+
+Menu dùng toàn bộ sản phẩm từ `/products` và danh mục từ `/categories`. Bộ lọc đối chiếu `categoryId` để theo tên danh mục hiện tại, kể cả danh mục chưa có món; khi API danh mục bị lỗi, dùng tên danh mục trong sản phẩm. Tìm kiếm theo tên hoặc nguyên liệu, không phân biệt chữ hoa/thường và chuẩn hóa Unicode tiếng Việt. Sắp xếp theo giá, phân trang 12/24/48 món và tổng số kết quả được tính từ dữ liệu hiện có. Thay tìm kiếm, danh mục, sắp xếp hoặc số món mỗi trang sẽ về trang 1. URL lưu bộ lọc, giữ được khi F5, Back/Forward và quay lại từ chi tiết món. Sau khi sửa dữ liệu API, tải lại trang để nạp dữ liệu mới; trang vượt quá tổng số trang sẽ tự chuyển về trang cuối hợp lệ.
+
 ### API Service và type dùng chung
 
 Tạo tệp `.env.local` tại thư mục gốc dự án và đặt địa chỉ JSON Server. Khởi động lại Vite sau khi sửa biến môi trường.

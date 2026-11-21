@@ -1,12 +1,19 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { LunchProduct } from '@/models/product'
+import type { Category, LunchProduct } from '@/models/product'
 
 type CatalogState = {
   products: LunchProduct[]
   status: 'idle' | 'ready' | 'error'
+  categories: Category[]
+  categoriesStatus: 'idle' | 'ready' | 'error'
 }
 
-const initialState: CatalogState = { products: [], status: 'idle' }
+const initialState: CatalogState = {
+  products: [],
+  status: 'idle',
+  categories: [],
+  categoriesStatus: 'idle',
+}
 
 const catalogSlice = createSlice({
   name: 'catalog',
@@ -19,12 +26,19 @@ const catalogSlice = createSlice({
     catalogLoadFailed(state) {
       state.status = 'error'
     },
+    categoriesLoaded(state, action: PayloadAction<Category[]>) {
+      state.categories = action.payload
+      state.categoriesStatus = 'ready'
+    },
+    categoriesLoadFailed(state) {
+      state.categoriesStatus = 'error'
+    },
   },
   selectors: {
     selectCatalog: (state) => state,
   },
 })
 
-export const { catalogLoaded, catalogLoadFailed } = catalogSlice.actions
+export const { catalogLoaded, catalogLoadFailed, categoriesLoaded, categoriesLoadFailed } = catalogSlice.actions
 export const { selectCatalog } = catalogSlice.selectors
 export default catalogSlice.reducer
