@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useOutletContext, useRevalidator } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { usePageTitle } from '@/app/usePageTitle'
 import Breadcrumb from '@/components/Breadcrumb'
 import DishImage from '@/components/DishImage'
-import { clearCart, decreaseQuantity, increaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
+import { applyVoucher, clearCart, decreaseQuantity, increaseQuantity, removeFromCart, removeVoucher } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import '@/styles/cart.scss'
@@ -19,7 +19,7 @@ function formatPrice(price: number) {
 function CartPage() {
   usePageTitle('Giỏ hàng')
   const dispatch = useAppDispatch()
-  const { lines, totalQuantity, total, canCheckout } = useAppSelector(selectCartSummary)
+  const { lines, totalQuantity, total, discount, grandTotal, voucherCode, appliedVoucher, voucherError, canCheckout } = useAppSelector(selectCartSummary)
   const { status } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
   const menuHref = useOutletContext<string>()
@@ -27,6 +27,8 @@ function CartPage() {
   const cancelButton = useRef<HTMLButtonElement>(null)
   const emptyHeading = useRef<HTMLHeadingElement>(null)
   const hadItems = useRef(lines.length > 0)
+  const [voucherInput, setVoucherInput] = useState('')
+  const [voucherTouched, setVoucherTouched] = useState(false)
 
   useEffect(() => {
     if (hadItems.current && lines.length === 0) emptyHeading.current?.focus()
@@ -40,6 +42,18 @@ function CartPage() {
     dialog.returnValue = ''
     dialog.showModal()
     cancelButton.current?.focus()
+  }
+
+  function handleApplyVoucher() {
+    setVoucherTouched(true)
+    if (!voucherInput.trim()) return
+    dispatch(applyVoucher(voucherInput))
+  }
+
+  function handleRemoveVoucher() {
+    dispatch(removeVoucher())
+    setVoucherInput('')
+    setVoucherTouched(false)
   }
 
   return (
@@ -166,8 +180,60 @@ function CartPage() {
               <dl>
                 <div><dt>Số lượng sản phẩm</dt><dd>{totalQuantity}</dd></div>
                 <div><dt>Tạm tính</dt><dd>{formatPrice(total)}</dd></div>
-                <div className="cart-summary__total"><dt>Tổng cộng</dt><dd>{formatPrice(total)}</dd></div>
+                {discount > 0 && (
+                  <div className="cart-summary__discount">
+                    <dt>Giảm giá ({appliedVoucher?.code})</dt>
+                    <dd>−{formatPrice(discount)}</dd>
+                  </div>
+                )}
+                <div className="cart-summary__total"><dt>Tổng cộng</dt><dd>{formatPrice(grandTotal)}</dd></div>
               </dl>
+
+              <div className="cart-voucher">
+                {appliedVoucher ? (
+                  <div className="cart-voucher__applied">
+                    <div className="cart-voucher__applied-info">
+                      <strong>{appliedVoucher.code}</strong>
+                      <span>{appliedVoucher.description}</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="site-button cart-voucher__remove"
+                      onClick={handleRemoveVoucher}
+                      aria-label={`Bỏ voucher ${appliedVoucher.code}`}
+                    >
+                      Bỏ
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <label htmlFor="cart-voucher-input" className="cart-voucher__label">Mã voucher</label>
+                    <div className="cart-voucher__input-row">
+                      <input
+                        id="cart-voucher-input"
+                        type="text"
+                        value={voucherInput}
+                        placeholder="Nhập mã voucher"
+                        autoComplete="off"
+                        onChange={(e) => setVoucherInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleApplyVoucher() } }}
+                      />
+                      <button
+                        type="button"
+                        className="site-button"
+                        onClick={handleApplyVoucher}
+                        disabled={!voucherInput.trim()}
+                      >
+                        Áp dụng
+                      </button>
+                    </div>
+                    {voucherTouched && voucherCode && voucherError && (
+                      <p className="cart-voucher__error" role="alert">{voucherError}</p>
+                    )}
+                  </>
+                )}
+              </div>
+
               {canCheckout && (
                 <Link to="/checkout" state={{ fromMenu: menuHref }} className="site-button site-button--primary">
                   Tiến hành thanh toán

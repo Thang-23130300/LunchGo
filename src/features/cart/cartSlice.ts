@@ -12,10 +12,12 @@ export type AddToCartPayload = {
 
 export type CartState = {
   items: CartItem[]
+  voucherCode: string | null
 }
 
 const initialState: CartState = {
   items: [],
+  voucherCode: null,
 }
 
 const cartSlice = createSlice({
@@ -101,6 +103,16 @@ const cartSlice = createSlice({
 
     clearCart(state) {
       state.items = []
+      state.voucherCode = null
+    },
+
+    applyVoucher(state, action: PayloadAction<string>) {
+      const code = action.payload.trim().toUpperCase()
+      state.voucherCode = code || null
+    },
+
+    removeVoucher(state) {
+      state.voucherCode = null
     },
   },
 })
@@ -111,6 +123,8 @@ export const {
   decreaseQuantity,
   removeFromCart,
   clearCart,
+  applyVoucher,
+  removeVoucher,
 } = cartSlice.actions
 
 export default cartSlice.reducer

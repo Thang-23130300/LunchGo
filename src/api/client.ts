@@ -31,3 +31,16 @@ export async function getById<T>(collection: string, id: string, signal?: AbortS
     throw error
   }
 }
+
+export async function postJson<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}/${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+    signal,
+  })
+
+  if (!response.ok) throw new ApiError(response.status, path)
+
+  return response.json() as Promise<T>
+}
