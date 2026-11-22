@@ -1,0 +1,45 @@
+[
+  {
+    "code": "WELCOME10",
+    "description": "Giảm 10% cho đơn từ 50.000đ (tối đa 30.000đ)",
+    "type": "PERCENT",
+    "value": 10,
+    "minOrderValue": 50000,
+    "maxDiscount": 30000,
+    "isActive": true
+  },
+  {
+    "code": "SAVE20K",
+    "description": "Giảm 20.000đ cho đơn từ 100.000đ",
+    "type": "FIXED",
+    "value": 20000,
+    "minOrderValue": 100000,
+    "isActive": true
+  },
+  {
+    "code": "LUCKY50",
+    "description": "Giảm 50% cho đơn từ 30.000đ (tối đa 50.000đ)",
+    "type": "PERCENT",
+    "value": 50,
+    "minOrderValue": 30000,
+    "maxDiscount": 50000,
+    "isActive": true
+  },
+  {
+    "code": "VIP200K",
+    "description": "Giảm 15% cho đơn từ 200.000đ (tối đa 100.000đ)",
+    "type": "PERCENT",
+    "value": 15,
+    "minOrderValue": 200000,
+    "maxDiscount": 100000,
+    "isActive": true
+  },
+  {
+    "code": "EXPIRED30",
+    "description": "Giảm 30% cho mọi đơn (đã hết hạn)",
+    "type": "PERCENT",
+    "value": 30,
+    "minOrderValue": 0,
+    "isActive": false
+  }
+]

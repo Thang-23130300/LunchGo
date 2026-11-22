@@ -73,7 +73,7 @@ export function loadCart(
     !Array.isArray(saved.items) ||
     !saved.items.every(isCartItem)
   ) {
-    return { items: [] }
+    return { items: [], voucherCode: null }
   }
 
   // Old carts stored at most one line per product before options were added.
@@ -82,7 +82,7 @@ export function loadCart(
     .map((item) => item.productId)
 
   if (new Set(legacyProductIds).size !== legacyProductIds.length) {
-    return { items: [] }
+    return { items: [], voucherCode: null }
   }
 
   const items = saved.items.map((item) => ({
@@ -94,10 +94,17 @@ export function loadCart(
   const itemIds = items.map((item) => item.itemId)
 
   if (new Set(itemIds).size !== itemIds.length) {
-    return { items: [] }
+    return { items: [], voucherCode: null }
   }
 
-  return { items }
+  const voucherCode =
+    'voucherCode' in saved &&
+    typeof saved.voucherCode === 'string' &&
+    saved.voucherCode.length > 0
+      ? saved.voucherCode
+      : null
+
+  return { items, voucherCode }
 }
 
 export function saveCart(
@@ -109,6 +116,7 @@ export function saveCart(
     {
       version: CART_STORAGE_VERSION,
       items: state.items,
+      voucherCode: state.voucherCode,
     },
     storage
   )

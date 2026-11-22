@@ -6,6 +6,8 @@ import Breadcrumb from '@/components/Breadcrumb'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
+import { createOrder } from '@/api'
+import type { AppliedVoucher } from '@/models/voucher'
 import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
 import '../styles/checkout.scss'
@@ -42,14 +44,18 @@ const EMPTY_INFO: CustomerInfo = { customerName: '', phone: '', address: '', not
 type OrderSummaryProps = {
   items: OrderDraftItem[]
   total: number
+  discount: number
+  grandTotal: number
+  appliedVoucher: AppliedVoucher | undefined
   canCheckout: boolean
+  submitting: boolean
   onIncrease: (productId: string) => void
   onDecrease: (productId: string) => void
   onRemove: (productId: string) => void
 }
 
 function OrderSummary({
-  items, total, canCheckout,
+  items, total, discount, grandTotal, appliedVoucher, canCheckout, submitting,
   onIncrease, onDecrease, onRemove,
 }: OrderSummaryProps) {
   return (
@@ -122,23 +128,25 @@ function OrderSummary({
               <span>Tạm tính</span>
               <span>{formatPrice(total)}</span>
             </div>
-            <div className="checkout-summary__row">
-              <span>Phí giao hàng</span>
-              <span>0đ (demo)</span>
-            </div>
+            {discount > 0 && appliedVoucher && (
+              <div className="checkout-summary__row checkout-summary__discount">
+                <span>Giảm giá ({appliedVoucher.code})</span>
+                <span>−{formatPrice(discount)}</span>
+              </div>
+            )}
 
             <div className="checkout-summary__total">
               <span>Tổng cộng</span>
-              <strong>{formatPrice(total)}</strong>
+              <strong>{formatPrice(grandTotal)}</strong>
             </div>
 
             <button
               type="submit"
               form="checkout-form"
               className="checkout-summary__confirm-btn"
-              disabled={!canCheckout}
+              disabled={!canCheckout || submitting}
             >
-              Xác nhận đơn hàng
+              {submitting ? 'Đang gửi đơn…' : 'Xác nhận đơn hàng'}
             </button>
             <p className="checkout-summary__confirm-note">
               Đơn demo · Không phát sinh thanh toán thật
@@ -298,6 +306,16 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
             ))}
 
             <div className="order-result__total-row">
+              <span>Tạm tính</span>
+              <strong>{formatPrice(order.subtotal)}</strong>
+            </div>
+            {order.discount > 0 && order.voucherCode && (
+              <div className="order-result__total-row order-result__discount-row">
+                <span>Giảm giá ({order.voucherCode})</span>
+                <strong>−{formatPrice(order.discount)}</strong>
+              </div>
+            )}
+            <div className="order-result__total-row order-result__final">
               <span>Tổng cộng</span>
               <strong>{formatPrice(order.total)}</strong>
             </div>
@@ -323,7 +341,7 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
 function CheckoutPage() {
   const dispatch = useAppDispatch()
   const menuHref = useOutletContext<string>()
-  const { lines, total, canCheckout } = useAppSelector(selectCartSummary)
+  const { lines, total, discount, grandTotal, voucherCode, appliedVoucher, canCheckout } = useAppSelector(selectCartSummary)
   const { status: catalogStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
 
@@ -331,6 +349,8 @@ function CheckoutPage() {
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerInfo, boolean>>>({})
   const [invalidAttempts, setInvalidAttempts] = useState(0)
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   const hasConfirmed = useRef(false)
@@ -374,9 +394,9 @@ function CheckoutPage() {
     setTouched((prev) => ({ ...prev, [field]: true }))
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!canCheckout || hasConfirmed.current) return
+    if (!canCheckout || hasConfirmed.current || submitting) return
 
     if (Object.keys(formErrors).length > 0) {
       setInvalidAttempts((attempts) => attempts + 1)
@@ -392,14 +412,27 @@ function CheckoutPage() {
         note: info.note.trim(),
       },
       items: orderItems,
-      total,
+      subtotal: total,
+      discount,
+      voucherCode: voucherCode,
+      total: grandTotal,
       paymentMethod: 'cod',
       createdAt: new Date().toISOString(),
     }
 
-    hasConfirmed.current = true
-    setConfirmedOrder(order)
-    dispatch(clearCart())
+    setSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      await createOrder(order)
+      hasConfirmed.current = true
+      setConfirmedOrder(order)
+      dispatch(clearCart())
+    } catch {
+      setSubmitError('Không thể gửi đơn hàng. Vui lòng kiểm tra kết nối và thử lại.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // ── Kết quả đơn hàng ───────────────────────────────────────────────────────
@@ -549,6 +582,13 @@ function CheckoutPage() {
               </div>
             </form>
 
+            {submitError && (
+              <div className="checkout-page__submit-error" role="alert">
+                <strong>Đặt hàng thất bại.</strong>
+                <p>{submitError}</p>
+              </div>
+            )}
+
             <Link
               to="/cart"
               state={{ fromMenu: menuHref }}
@@ -566,7 +606,11 @@ function CheckoutPage() {
           <OrderSummary
             items={orderItems}
             total={total}
+            discount={discount}
+            grandTotal={grandTotal}
+            appliedVoucher={appliedVoucher}
             canCheckout={canCheckout}
+            submitting={submitting}
             onIncrease={(id) => dispatch(increaseQuantity(id))}
             onDecrease={(id) => dispatch(decreaseQuantity(id))}
             onRemove={(id) => dispatch(removeFromCart(id))}
