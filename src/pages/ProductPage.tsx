@@ -201,7 +201,7 @@ function ProductDetails({ id }: { id: string | undefined }) {
                 disabled={revalidationState === 'loading'}
                 onClick={() => void revalidate()}
               >
-                Thử lại
+                {revalidationState === 'loading' ? 'Đang tải lại...' : 'Thử lại'}
               </button>
             )}
 
@@ -212,6 +212,8 @@ function ProductDetails({ id }: { id: string | undefined }) {
               ← Quay lại thực đơn
             </Link>
           </div>
+
+          {revalidationState === 'loading' && <p role="status">Đang tải lại thông tin món ăn...</p>}
         </div>
       </section>
     )

@@ -109,6 +109,8 @@ Home lấy danh mục từ `/categories` qua cùng loader và Redux, hiển th�
 
 Menu dùng toàn bộ sản phẩm từ `/products` và danh mục từ `/categories`. Bộ lọc đối chiếu `categoryId` để theo tên danh mục hiện tại, kể cả danh mục chưa có món; khi API danh mục bị lỗi, dùng tên danh mục trong sản phẩm. Tìm kiếm theo tên hoặc nguyên liệu, không phân biệt chữ hoa/thường và chuẩn hóa Unicode tiếng Việt. Sắp xếp theo giá, phân trang 12/24/48 món và tổng số kết quả được tính từ dữ liệu hiện có. Thay tìm kiếm, danh mục, sắp xếp hoặc số món mỗi trang sẽ về trang 1. URL lưu bộ lọc, giữ được khi F5, Back/Forward và quay lại từ chi tiết món. Sau khi sửa dữ liệu API, tải lại trang để nạp dữ liệu mới; trang vượt quá tổng số trang sẽ tự chuyển về trang cuối hợp lệ.
 
+Khi mở hoặc F5 trang, Router hiển thị Loading trong lúc chờ API. Home báo lỗi sản phẩm và danh mục riêng; Menu vẫn dùng được sản phẩm nếu API danh mục lỗi và giữ danh mục đang chọn trong URL để thử lại. Nút thử lại bị khóa và hiển thị trạng thái đang tải cho tới khi hoàn tất. Thực đơn trống được phân biệt với tìm kiếm không có kết quả; trường hợp không có kết quả có nút xóa bộ lọc. Chi tiết món phân biệt lỗi API với ID không tồn tại, luôn có liên kết quay lại thực đơn.
+
 ### API Service và type dùng chung
 
 Tạo tệp `.env.local` tại thư mục gốc dự án và đặt địa chỉ JSON Server. Khởi động lại Vite sau khi sửa biến môi trường.

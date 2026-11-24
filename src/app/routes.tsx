@@ -14,7 +14,13 @@ const router = createBrowserRouter(
     <Route
       element={<CustomerLayout />}
       loader={createCatalogLoader(store)}
-      hydrateFallbackElement={<p role="status">Đang tải dữ liệu...</p>}
+      hydrateFallbackElement={
+        <main className="site-shell">
+          <div className="page-content page-content--inner" aria-busy="true">
+            <p role="status">Đang tải dữ liệu LunchGo...</p>
+          </div>
+        </main>
+      }
     >
       <Route index element={<HomePage />} />
       <Route path="menu" element={<MenuPage />} />

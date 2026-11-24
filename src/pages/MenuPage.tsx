@@ -94,6 +94,7 @@ function MenuPage() {
   const page = readPositiveInteger(searchParams.get('page')) ?? 1
   const rawPageSize = readPositiveInteger(searchParams.get('pageSize')) ?? DEFAULT_PAGE_SIZE
   const pageSize = PAGE_SIZE_OPTIONS.includes(rawPageSize) ? rawPageSize : DEFAULT_PAGE_SIZE
+  const rawCategory = searchParams.get('category')
 
   const categories = useMemo(
     () => [
@@ -101,16 +102,18 @@ function MenuPage() {
       ...new Set(
         categoriesStatus === 'ready'
           ? catalogCategories.map((category) => category.name)
-          : products.map((product) => product.category),
+          : [
+            ...products.map((product) => product.category),
+            ...(rawCategory && rawCategory !== ALL_CATEGORIES ? [rawCategory] : []),
+          ],
       ),
     ],
-    [catalogCategories, categoriesStatus, products],
+    [catalogCategories, categoriesStatus, products, rawCategory],
   )
   const categoryNamesById = useMemo(
     () => new Map(catalogCategories.map((category) => [category.id, category.name])),
     [catalogCategories],
   )
-  const rawCategory = searchParams.get('category')
   const selectedCategory = categories.find((category) => category === rawCategory) ?? ALL_CATEGORIES
 
   const filteredProducts = useMemo(() => {
@@ -143,10 +146,10 @@ function MenuPage() {
 
   useEffect(() => {
     // Kiểm tra danh mục và số trang sau khi catalog đã tải xong.
-    if (!loading && !apiError && location.search !== canonicalSearch) {
+    if (!loading && !apiError && revalidationState !== 'loading' && location.search !== canonicalSearch) {
       setSearchParams(canonicalSearch, { replace: true })
     }
-  }, [loading, apiError, location.search, canonicalSearch, setSearchParams])
+  }, [loading, apiError, revalidationState, location.search, canonicalSearch, setSearchParams])
 
   const pagedProducts = useMemo(() => {
     const start = (safePage - 1) * pageSize
@@ -209,9 +212,22 @@ function MenuPage() {
         <div className="alert alert-warning" role="alert">
           <p>Không thể tải thực đơn.</p>
           <button type="button" className="btn btn-outline-primary" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
-            Thử lại
+            {revalidationState === 'loading' ? 'Đang tải lại...' : 'Thử lại'}
           </button>
         </div>
+      )}
+
+      {!apiError && categoriesStatus === 'error' && (
+        <div className="alert alert-warning">
+          <p role="alert">Không thể tải danh mục. Bạn vẫn có thể tìm kiếm và chọn món trong thực đơn.</p>
+          <button type="button" className="btn btn-outline-primary" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
+            {revalidationState === 'loading' ? 'Đang tải lại...' : 'Thử lại danh mục'}
+          </button>
+        </div>
+      )}
+
+      {revalidationState === 'loading' && (
+        <p className="text-secondary" role="status">Đang tải lại dữ liệu...</p>
       )}
 
       <div className="menu-page__filters">
@@ -268,12 +284,14 @@ function MenuPage() {
         <div className="menu-page__empty">
           <span className="menu-page__empty-icon" aria-hidden="true">⌕</span>
           <div role="status">
-            <h2>Không tìm thấy món ăn phù hợp.</h2>
-            <p>Thử tìm tên món khác hoặc thay đổi danh mục.</p>
+            <h2>{products.length === 0 ? 'Thực đơn hiện chưa có món ăn.' : 'Không tìm thấy món ăn phù hợp.'}</h2>
+            <p>{products.length === 0 ? 'Bạn vui lòng quay lại sau.' : 'Thử tìm tên món khác hoặc thay đổi danh mục.'}</p>
           </div>
-          <button type="button" className="site-button site-button--primary" onClick={clearFilters}>
-            Xóa bộ lọc
-          </button>
+          {(keyword || selectedCategory !== ALL_CATEGORIES) && (
+            <button type="button" className="site-button site-button--primary" onClick={clearFilters}>
+              Xóa bộ lọc
+            </button>
+          )}
         </div>
       )}
 
