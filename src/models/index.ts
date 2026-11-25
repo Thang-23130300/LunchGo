@@ -3,3 +3,4 @@ export type { OptionGroup, Option, SelectedOption, SelectionType, CustomizationO
 export type { CartItem } from './cart'
 export type { Order, OrderItem, OrderDraft } from './order'
 export type { Voucher, VoucherType, AppliedVoucher, VoucherErrorCode, VoucherError, VoucherValidation } from './voucher'
+export type { UserProfile, LoginCredentials, AuthTokens, RefreshTokenRequest, AuthSession, AuthErrorCode } from './auth'

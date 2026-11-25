@@ -1,4 +1,4 @@
-export { API_BASE_URL } from './config'
+export { API_BASE_URL, AUTH_API_BASE_URL } from './config'
 export { ApiError, getJson, getById, postJson } from './client'
 export { getProducts, getProductById } from './products'
 export { getCategories, getCategoryById } from './categories'

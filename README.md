@@ -133,6 +133,33 @@ const category = await getCategoryById('CAT03')
 
 Type chuẩn được định nghĩa trong `src/models/` và export tại `src/models/index.ts`. `Product` dùng các trường sẵn có của catalog cùng metadata tùy chọn từ Excel. `CartItem` lưu `productId`, `quantity`, `itemId` và `selectedOptionIds`, tương thích giỏ LocalStorage cũ. `SelectedOption` là bản chụp ID, tên và giá thêm của lựa chọn tại thời điểm đặt hàng. `Order` chứa `orderId`, thông tin người nhận, các `OrderItem`, tổng tiền, phương thức thanh toán và thời gian tạo. Các tên cũ `LunchProduct`, `CustomizationOption`, `ConfirmedOrder`, `OrderDraftItem`, `OrderDraftOption` tham chiếu về type chuẩn để các import hiện có tiếp tục dùng được.
 
+### L01 — Authentication Service
+
+`src/services/authService.ts` cung cấp `authService.login`, `authService.getMe` và `authService.refresh`, dùng [DummyJSON Authentication](https://dummyjson.com/docs/auth). Tài khoản demo là **emilys** / **emilyspass**. Tên `lunchgo.demo` trong bản thiết kế chỉ là dữ liệu minh họa. Phạm vi L01 là Service và type dùng chung; giao diện đăng nhập, Redux auth và lưu phiên sẽ được nối ở bước tiếp theo.
+
+Auth dùng `https://dummyjson.com` riêng với JSON Server của sản phẩm/đơn hàng. Có thể đặt `VITE_AUTH_API_BASE_URL=https://dummyjson.com` trong `.env.local`; mặc định đã dùng địa chỉ này. Khởi động lại Vite sau khi đổi biến môi trường.
+
+```ts
+import { authService, AuthError } from '@/services/authService'
+import type { UserProfile, AuthSession, AuthTokens } from '@/models'
+
+const session: AuthSession = await authService.login({
+  username: 'emilys',
+  password: 'emilyspass',
+  expiresInMins: 30,
+})
+const profile: UserProfile = await authService.getMe(session.tokens.accessToken)
+const tokens: AuthTokens = await authService.refresh({
+  refreshToken: session.tokens.refreshToken,
+  expiresInMins: 30,
+})
+// Dùng tokens.accessToken mới cho các lần gọi getMe tiếp theo.
+```
+
+`login` gọi `POST /auth/login`, trả về `{ user, tokens }`. `getMe` gọi `GET /auth/me` với Bearer access token, trả về hồ sơ công khai đã chuẩn hóa. `refresh` gọi `POST /auth/refresh`, trả về cặp token mới. Việc làm mới phiên do bên gọi chủ động thực hiện; Service không tự đăng nhập lại. Các hàm nhận `AbortSignal` tùy chọn ở tham số cuối. Request quá 15 giây trả lỗi `TIMEOUT`; hủy từ bên gọi giữ nguyên lý do hủy.
+
+`UserProfile`, `LoginCredentials`, `AuthTokens`, `RefreshTokenRequest`, `AuthSession` và `AuthErrorCode` nằm tại `src/models/auth.ts`, export qua `@/models`. `AuthError` có `code`, `message` tiếng Việt và `status` khi có HTTP response. Bên gọi dùng `error instanceof AuthError` để xử lý `INVALID_INPUT`, `INVALID_CREDENTIALS`, `UNAUTHORIZED`, `NETWORK_ERROR`, `TIMEOUT`, `HTTP_ERROR` và `INVALID_RESPONSE`. Service kiểm tra cấu trúc phản hồi trước khi trả dữ liệu; hồ sơ không chứa mật khẩu hoặc dữ liệu ngân hàng mà DummyJSON trả kèm. Service không tự ghi token/mật khẩu vào LocalStorage và không có API đăng ký tài khoản.
+
 ## Store và giao diện
 
 - Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
