@@ -38,3 +38,11 @@ export type AuthErrorCode =
   | 'TIMEOUT'
   | 'HTTP_ERROR'
   | 'INVALID_RESPONSE'
+
+export interface AuthFailure {
+  code: AuthErrorCode
+  message: string
+  status?: number
+}
+
+export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated' | 'error'

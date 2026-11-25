@@ -1,0 +1,76 @@
+.login-page {
+  &__content {
+    width: min(100%, 342px);
+    margin: 0 auto;
+
+    h1 {
+      margin: 0 0 24px;
+      font-size: clamp(28px, 4vw, 36px);
+      font-weight: 700;
+      text-align: center;
+    }
+  }
+}
+
+.login-form {
+  --login-error: #b42318;
+  --login-error-background: #faeded;
+  padding: 20px;
+  border: 1px solid var(--site-border);
+  background: #fff;
+  font-size: 14px;
+
+  .site-button { width: 100%; min-height: 42px; border-radius: 0; }
+  .login-form__submit { min-height: 46px; }
+
+  &__field {
+    margin-bottom: 18px;
+
+    label { display: block; margin-bottom: 6px; font-weight: 600; line-height: 20px; }
+
+    input {
+      width: 100%;
+      min-width: 0;
+      height: 46px;
+      padding: 10px 14px;
+      border: 1px solid var(--site-border);
+      border-radius: 0;
+      background: #fff;
+      color: var(--site-text);
+      font: inherit;
+    }
+
+    input[aria-invalid='true'] { border-color: var(--login-error); background: var(--login-error-background); }
+    input:disabled { opacity: .7; cursor: wait; }
+  }
+
+  &__password {
+    position: relative;
+    input { padding-right: 52px; }
+  }
+
+  &__toggle {
+    position: absolute;
+    inset: 1px 1px 1px auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--site-primary);
+    &:disabled { opacity: .6; cursor: wait; }
+  }
+
+  &__submit {
+    width: 100%;
+    min-height: 46px;
+    margin-top: 14px;
+    border-radius: 0;
+  }
+
+  &__demo, &__error { margin: 18px 0 0; font-size: 13px; }
+  &__demo { color: var(--site-muted); line-height: 1.6; strong { font-weight: 500; } }
+  &__error { color: var(--login-error); p { margin: 0 0 18px; } .site-button { width: 100%; } }
+  &__field-error { margin: 6px 0 0; color: var(--login-error); font-size: 13px; }
+  &__demo-button { width: 100%; min-height: 42px; margin-top: 18px; border-radius: 0; }
+}

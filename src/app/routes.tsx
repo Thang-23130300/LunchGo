@@ -8,12 +8,14 @@ import CartPage from '@/pages/CartPage'
 import CheckoutPage from '@/pages/CheckoutPage'
 import HomePage from '@/pages/HomePage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import LoginPage from '@/pages/LoginPage'
+
+const catalogLoader = createCatalogLoader(store)
 
 const router = createBrowserRouter(
   createRoutesFromElements(
     <Route
       element={<CustomerLayout />}
-      loader={createCatalogLoader(store)}
       hydrateFallbackElement={
         <main className="site-shell">
           <div className="page-content page-content--inner" aria-busy="true">
@@ -22,12 +24,13 @@ const router = createBrowserRouter(
         </main>
       }
     >
-      <Route index element={<HomePage />} />
-      <Route path="menu" element={<MenuPage />} />
-      <Route path="product/:id" element={<ProductPage />} />
-      <Route path="cart" element={<CartPage />} />
-      <Route path="checkout" element={<CheckoutPage />} />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route index element={<HomePage />} loader={catalogLoader} />
+      <Route path="menu" element={<MenuPage />} loader={catalogLoader} />
+      <Route path="product/:id" element={<ProductPage />} loader={catalogLoader} />
+      <Route path="cart" element={<CartPage />} loader={catalogLoader} />
+      <Route path="checkout" element={<CheckoutPage />} loader={catalogLoader} />
+      <Route path="login" element={<LoginPage />} />
+      <Route path="*" element={<NotFoundPage />} loader={catalogLoader} />
     </Route>,
   ),
 )

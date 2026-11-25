@@ -135,7 +135,7 @@ Type chuẩn được định nghĩa trong `src/models/` và export tại `src/m
 
 ### L01 — Authentication Service
 
-`src/services/authService.ts` cung cấp `authService.login`, `authService.getMe` và `authService.refresh`, dùng [DummyJSON Authentication](https://dummyjson.com/docs/auth). Tài khoản demo là **emilys** / **emilyspass**. Tên `lunchgo.demo` trong bản thiết kế chỉ là dữ liệu minh họa. Phạm vi L01 là Service và type dùng chung; giao diện đăng nhập, Redux auth và lưu phiên sẽ được nối ở bước tiếp theo.
+`src/services/authService.ts` cung cấp `authService.login`, `authService.getMe` và `authService.refresh`, dùng [DummyJSON Authentication](https://dummyjson.com/docs/auth). Tài khoản demo là **emilys** / **emilyspass**. Tên `lunchgo.demo` trong bản thiết kế chỉ là dữ liệu minh họa. L01 cung cấp Service và type dùng chung; L02 bên dưới tích hợp Redux và lưu phiên. Giao diện đăng nhập sẽ dùng các action và selector này.
 
 Auth dùng `https://dummyjson.com` riêng với JSON Server của sản phẩm/đơn hàng. Có thể đặt `VITE_AUTH_API_BASE_URL=https://dummyjson.com` trong `.env.local`; mặc định đã dùng địa chỉ này. Khởi động lại Vite sau khi đổi biến môi trường.
 
@@ -160,6 +160,49 @@ const tokens: AuthTokens = await authService.refresh({
 
 `UserProfile`, `LoginCredentials`, `AuthTokens`, `RefreshTokenRequest`, `AuthSession` và `AuthErrorCode` nằm tại `src/models/auth.ts`, export qua `@/models`. `AuthError` có `code`, `message` tiếng Việt và `status` khi có HTTP response. Bên gọi dùng `error instanceof AuthError` để xử lý `INVALID_INPUT`, `INVALID_CREDENTIALS`, `UNAUTHORIZED`, `NETWORK_ERROR`, `TIMEOUT`, `HTTP_ERROR` và `INVALID_RESPONSE`. Service kiểm tra cấu trúc phản hồi trước khi trả dữ liệu; hồ sơ không chứa mật khẩu hoặc dữ liệu ngân hàng mà DummyJSON trả kèm. Service không tự ghi token/mật khẩu vào LocalStorage và không có API đăng ký tài khoản.
 
+### L02 — Redux Auth và phiên đăng nhập
+
+`src/features/auth/authSlice.ts` quản lý `user`, `tokens`, `status`, `error` và yêu cầu đang chạy trong `state.auth`. Các trạng thái là `unauthenticated`, `idle` (có token chờ xác nhận), `loading`, `authenticated` và `error` (khôi phục phiên gặp lỗi tạm thời). Lỗi được giữ dưới dạng dữ liệu `{ code, message, status? }`, tương thích Redux.
+
+Module khác dùng selector để lấy tài khoản và ID; không đọc hoặc tin hồ sơ người dùng từ LocalStorage:
+
+```ts
+import { useAppDispatch, useAppSelector } from '@/app/hooks'
+import {
+  login, logout, restoreSession, clearAuthError,
+  selectCurrentUser, selectCurrentUserId, selectIsAuthenticated,
+  selectAuthLoading, selectAuthError, selectIsRestoringSession,
+} from '@/features/auth/authSlice'
+
+// Trong component React:
+const dispatch = useAppDispatch()
+const currentUser = useAppSelector(selectCurrentUser)
+const currentUserId = useAppSelector(selectCurrentUserId) // number | null
+const isAuthenticated = useAppSelector(selectIsAuthenticated)
+const loading = useAppSelector(selectAuthLoading)
+const error = useAppSelector(selectAuthError)
+
+await dispatch(login({ username: 'emilys', password: 'emilyspass' }))
+dispatch(clearAuthError())
+dispatch(logout())
+// Khi khôi phục phiên bị lỗi mạng, có thể thử lại:
+await dispatch(restoreSession())
+```
+
+`main.tsx` tự dispatch `restoreSession()` khi mở/F5 ứng dụng. Store nạp token qua `src/features/auth/authStorage.ts`, gọi `/auth/me` để xác nhận hồ sơ, chỉ sau đó cung cấp `currentUserId` và trạng thái đã đăng nhập. Nếu access token không hợp lệ, thử `/auth/refresh` đúng một lần rồi gọi lại `/auth/me`. Refresh token không hợp lệ hoặc dữ liệu phản hồi sai sẽ xóa phiên; lỗi mạng/timeout/lỗi dịch vụ giữ token để thử khôi phục lại, đồng thời `currentUserId` vẫn là `null` cho tới khi xác nhận thành công.
+
+LocalStorage dùng khóa `lunchgo:v1:auth`, chỉ lưu `{ version: 1, tokens: { accessToken, refreshToken } }`; không lưu mật khẩu hoặc hồ sơ. Token mới sau refresh được lưu lại. Dữ liệu lỗi/sai phiên bản được loại bỏ; LocalStorage bị chặn hoặc đầy không làm gián đoạn phiên trong bộ nhớ. `logout()` xóa tài khoản, token, lỗi và phiên đã lưu; phản hồi đến muộn từ lần đăng nhập/khôi phục trước đó bị bỏ qua. Giỏ hàng vẫn được giữ như trước. Trong lúc khôi phục, module giao diện dùng `selectAuthLoading`/`selectIsRestoringSession` để chờ kết quả trước khi xử lý điều hướng theo tài khoản.
+
+### L03 — Trang Login
+
+Mở `/login` hoặc nút **Tài khoản** trên Header. Giao diện dựa trên các trạng thái Login trong bản PDF thiết kế ngày 25/11/2026, dùng màu và thành phần chung của LunchGo. Form có tên đăng nhập, mật khẩu, nút ẩn/hiện, validation bắt buộc, lỗi API và trạng thái đang đăng nhập. Nút **Dùng tài khoản demo** điền `emilys` / `emilyspass`; lỗi được kiểm tra qua DummyJSON thật. Không có chức năng đăng ký.
+
+`src/pages/LoginPage.tsx` dùng `useLoginForm` để dispatch `login` vào Redux Auth. Khi đang đăng nhập/khôi phục phiên, form bị khóa để tránh gửi lặp; rời Login sẽ hủy yêu cầu đăng nhập đang chờ. Validation đưa focus tới trường sai đầu tiên, lỗi API được đọc qua `role="alert"`, các trường dùng autocomplete phù hợp.
+
+Đăng nhập thành công điều hướng bằng `replace`: mặc định về Home; nếu có `returnTo` hợp lệ thì quay lại đường dẫn nội bộ đó, giữ cả query và hash. Header tự tạo `returnTo` từ trang đang xem, giữ ngữ cảnh bộ lọc Menu. URL ngoài ứng dụng hoặc quay lại `/login` được thay bằng Home. F5 ở Login giữ đích đến trong URL nhưng không lưu mật khẩu. Tài khoản đã đăng nhập truy cập Login sẽ đi thẳng tới đích đến; Header hiển thị thông tin tài khoản và nút đăng xuất.
+
+Login dùng AuthService độc lập với API món ăn. Các route cần catalog vẫn dùng chung `catalogLoader`; route Login không chờ tải sản phẩm/danh mục. File kiểm thử trình duyệt chỉ lưu bên ngoài repository.
+
 ## Store và giao diện
 
 - Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
@@ -176,6 +219,7 @@ const tokens: AuthTokens = await authService.refresh({
 | `/product/:id` | Chi tiết món; nhận `id` từ URL |
 | `/cart` | Giỏ hàng |
 | `/checkout` | Thanh toán |
+| `/login` | Đăng nhập bằng tài khoản demo DummyJSON |
 | `*` | Trang 404 cho đường dẫn không tồn tại |
 
 React Router giữ bộ lọc thực đơn khi tải lại và dùng Back/Forward. Nút quay về Thực đơn từ giỏ hoặc checkout giữ bộ lọc đang dùng.
