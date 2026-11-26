@@ -126,10 +126,11 @@ function HomePage() {
             <div className="home-data-error">
               <p role="alert">Không thể tải danh mục.</p>
               <button className="home-button" type="button" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
-                Thử lại danh mục
+                {revalidationState === 'loading' ? 'Đang tải lại...' : 'Thử lại danh mục'}
               </button>
             </div>
           )}
+          {revalidationState === 'loading' && categoriesStatus === 'error' && <p role="status">Đang tải lại danh mục...</p>}
           {categoriesStatus === 'ready' && categories.length === 0 && <p role="status">Hiện chưa có danh mục.</p>}
           {categoriesStatus === 'ready' && categories.length > 0 && (
             <ul className="home-grid home-categories">
@@ -159,11 +160,14 @@ function HomePage() {
             <div className="home-data-error">
               <p role="alert">Không thể tải sản phẩm nổi bật.</p>
               <button className="home-button" type="button" disabled={revalidationState === 'loading'} onClick={() => void revalidate()}>
-                Thử lại sản phẩm
+                {revalidationState === 'loading' ? 'Đang tải lại...' : 'Thử lại sản phẩm'}
               </button>
             </div>
           )}
-          {status === 'ready' && featuredProducts.length === 0 && <p role="status">Hiện chưa có sản phẩm nổi bật.</p>}
+          {revalidationState === 'loading' && status === 'error' && <p role="status">Đang tải lại sản phẩm nổi bật...</p>}
+          {status === 'ready' && featuredProducts.length === 0 && (
+            <p role="status">{products.length === 0 ? 'Thực đơn hiện chưa có món ăn.' : 'Hiện chưa có sản phẩm nổi bật.'}</p>
+          )}
           {status === 'ready' && featuredProducts.length > 0 && (
             <div className="home-grid">
               {featuredProducts.map((product) => <SuggestedDish key={product.id} product={product} menuHref={menuHref} />)}
