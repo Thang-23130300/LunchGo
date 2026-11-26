@@ -7,8 +7,10 @@ import { MenuPage, ProductPage } from '@/features/discovery'
 import CartPage from '@/pages/CartPage'
 import CheckoutPage from '@/pages/CheckoutPage'
 import HomePage from '@/pages/HomePage'
-import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/LoginPage'
+import OrdersPage from '@/pages/OrdersPage'
+import OrderDetailPage from '@/pages/OrderDetailPage'
+import NotFoundPage from '@/pages/NotFoundPage'
 
 const catalogLoader = createCatalogLoader(store)
 
@@ -30,6 +32,8 @@ const router = createBrowserRouter(
       <Route path="cart" element={<CartPage />} loader={catalogLoader} />
       <Route path="checkout" element={<CheckoutPage />} loader={catalogLoader} />
       <Route path="login" element={<LoginPage />} />
+      <Route path="orders" element={<OrdersPage />} />
+      <Route path="orders/:orderId" element={<OrderDetailPage />} />
       <Route path="*" element={<NotFoundPage />} loader={catalogLoader} />
     </Route>,
   ),
