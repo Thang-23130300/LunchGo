@@ -6,7 +6,9 @@ import Breadcrumb from '@/components/Breadcrumb'
 import { clearCart, increaseQuantity, decreaseQuantity, removeFromCart } from '@/features/cart/cartSlice'
 import { selectCartSummary } from '@/features/cart/cartSummary'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
+import { selectCurrentUser, selectCurrentUserId } from '@/features/auth/authSlice'
 import { createOrder } from '@/api'
+import { addOrder } from '@/features/orders/orderStorage'
 import type { AppliedVoucher } from '@/models/voucher'
 import type { ConfirmedOrder, CustomerInfo, OrderDraftItem } from '@/features/checkout/orderTypes'
 import { generateOrderId } from '@/features/checkout/orderTypes'
@@ -234,7 +236,6 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
         <Breadcrumb items={[{ label: 'Thanh toán' }, { label: 'Kết quả đơn hàng' }]} />
 
         <div className="order-result__panel">
-          {/* Check icon */}
           <div className="order-result__check-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <polyline points="20 6 9 17 4 12" />
@@ -248,7 +249,6 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
             Đây là đơn hàng minh họa. Không có giao dịch tiền thật và không có đơn hàng thực tế được tạo.
           </div>
 
-          {/* Chi tiết đơn hàng */}
           <div className="order-result__card">
             <div className="order-result__card-header">
               <span className="order-result__card-label">Chi tiết đơn hàng</span>
@@ -286,7 +286,6 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
               <div key={item.itemId} className="order-result__item-row">
                 <div>
                   <span>{item.productName} × {item.quantity}</span>
-
                   {item.selectedOptions.length > 0 && (
                     <div className="order-result__item-options">
                       {item.selectedOptions.map((option) => (
@@ -300,7 +299,6 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
                     </div>
                   )}
                 </div>
-
                 <strong>{formatPrice(item.lineTotal)}</strong>
               </div>
             ))}
@@ -322,13 +320,17 @@ function OrderResult({ order, menuHref }: OrderResultProps) {
           </div>
 
           <div className="order-result__actions">
+            <Link to={`/orders/${order.orderId}`} className="order-result__view-btn">
+              Xem đơn hàng
+            </Link>
             <Link to={menuHref} className="order-result__menu-btn">
               Về thực đơn →
             </Link>
           </div>
 
           <p className="order-result__hint">
-            Kết quả chỉ hiển thị đến khi bạn tải lại hoặc rời trang.
+            Đơn hàng đã được lưu và có thể xem lại tại{' '}
+            <Link to="/orders">Lịch sử mua hàng</Link>.
           </p>
         </div>
       </div>
@@ -344,6 +346,8 @@ function CheckoutPage() {
   const { lines, total, discount, grandTotal, voucherCode, appliedVoucher, canCheckout } = useAppSelector(selectCartSummary)
   const { status: catalogStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
+  const currentUser = useAppSelector(selectCurrentUser)
+  const currentUserId = useAppSelector(selectCurrentUserId)
 
   const [info, setInfo] = useState<CustomerInfo>(EMPTY_INFO)
   const [touched, setTouched] = useState<Partial<Record<keyof CustomerInfo, boolean>>>({})
@@ -352,9 +356,22 @@ function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
-
   const hasConfirmed = useRef(false)
+
   usePageTitle(confirmedOrder ? 'Kết quả đơn hàng' : 'Thanh toán')
+
+  // Auto-fill thông tin user khi đăng nhập
+  useEffect(() => {
+    if (currentUser && info.customerName === '' && info.phone === '') {
+      setInfo({
+        customerName: `${currentUser.firstName} ${currentUser.lastName}`.trim(),
+        phone: currentUser.phone ?? '',
+        address: '',
+        note: '',
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser])
 
   useEffect(() => {
     if (invalidAttempts) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
@@ -363,7 +380,6 @@ function CheckoutPage() {
   const orderItems = useMemo<OrderDraftItem[]>(() => {
     return lines.flatMap((line) => {
       if (!line.product || line.lineTotal === null) return []
-
       return [{
         itemId: line.itemId ?? line.productId,
         productId: line.productId,
@@ -405,6 +421,7 @@ function CheckoutPage() {
 
     const order: ConfirmedOrder = {
       orderId: generateOrderId(),
+      userId: currentUserId,
       customer: {
         customerName: info.customerName.trim(),
         phone: info.phone.trim(),
@@ -417,6 +434,7 @@ function CheckoutPage() {
       voucherCode: voucherCode,
       total: grandTotal,
       paymentMethod: 'cod',
+      status: 'placed',
       createdAt: new Date().toISOString(),
     }
 
@@ -424,12 +442,15 @@ function CheckoutPage() {
     setSubmitError(null)
 
     try {
-      await createOrder(order)
+      // Lưu vào LocalStorage (nguồn thật)
+      addOrder(order)
+      // Gửi lên fake API, lỗi không block
+      void createOrder(order).catch(() => { /* silent */ })
       hasConfirmed.current = true
       setConfirmedOrder(order)
       dispatch(clearCart())
     } catch {
-      setSubmitError('Không thể gửi đơn hàng. Vui lòng kiểm tra kết nối và thử lại.')
+      setSubmitError('Không thể tạo đơn hàng. Vui lòng kiểm tra kết nối và thử lại.')
     } finally {
       setSubmitting(false)
     }
