@@ -1,4 +1,4 @@
-    
+
 export type ProductSource = 'themealdb' | 'dummyjson' | 'local'
 
 export interface Category {
@@ -30,6 +30,9 @@ export interface Product {
   isFeatured?: boolean
   imageFileName?: string
   imageSourceUrl?: string
+  baseRating?: number
+  baseReviewCount?: number
+  baseSoldCount?: number
 }
 
 export type LunchProduct = Product

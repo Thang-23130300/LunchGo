@@ -2,13 +2,13 @@ import { useEffect, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext, useRevalidator } from 'react-router'
 import { useAppSelector } from '@/app/hooks'
 import { usePageTitle } from '@/app/usePageTitle'
-import DishImage from '@/components/DishImage'
+import ProductCard from '@/components/ProductCard'
+import { useDispatch } from 'react-redux'
+import type { AppDispatch } from '@/app/store'
+import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import type { LunchProduct } from '@/models/product'
 import bunBoImage from '@/assets/home/bunbo.webp'
 import '@/styles/home.scss'
-
-const priceFormatter = new Intl.NumberFormat('vi-VN')
 
 const benefits = [
   { icon: '☷', title: 'Thực đơn dễ tìm', description: 'Tìm kiếm, lọc và sắp xếp' },
@@ -22,33 +22,9 @@ const orderSteps = [
   { title: 'Xác nhận đơn COD', description: 'Điền thông tin người nhận, chọn COD mô phỏng và xác nhận để nhận mã đơn.' },
 ]
 
-function SuggestedDish({ product, menuHref }: { product: LunchProduct; menuHref: string }) {
-  return (
-    <article className="home-dish">
-      <div className="home-dish__art">
-        <DishImage src={product.image} name={product.name} width={500} height={360} loading="lazy" />
-      </div>
-      <div className="home-dish__body">
-        <p className="home-eyebrow">{product.category}</p>
-        <h3>{product.name}</h3>
-        <p className="home-dish__ingredients">{product.description || product.ingredients.join(', ')}</p>
-        <div className="home-dish__bottom">
-          <strong>{priceFormatter.format(product.price)}đ</strong>
-          <Link
-            to={`/product/${encodeURIComponent(product.id)}`}
-            state={{ fromMenu: menuHref }}
-            aria-label={`Xem chi tiết ${product.name}`}
-          >
-            Xem chi tiết <span aria-hidden="true">↗</span>
-          </Link>
-        </div>
-      </div>
-    </article>
-  )
-}
-
 function HomePage() {
   usePageTitle()
+  const dispatch = useDispatch<AppDispatch>()
   const { products, status, categories, categoriesStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
   const navigate = useNavigate()
@@ -170,7 +146,14 @@ function HomePage() {
           )}
           {status === 'ready' && featuredProducts.length > 0 && (
             <div className="home-grid">
-              {featuredProducts.map((product) => <SuggestedDish key={product.id} product={product} menuHref={menuHref} />)}
+              {featuredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  menuHref={menuHref}
+                  onAddToCart={(productId) => dispatch(addToCart(productId))}
+                />
+              ))}
             </div>
           )}
           <Link className="home-button home-featured__more" to="/menu">

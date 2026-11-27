@@ -4,10 +4,10 @@ import { useAppSelector } from '@/app/hooks'
 import { usePageTitle } from '@/app/usePageTitle'
 import type { AppDispatch } from '@/app/store'
 import Breadcrumb from '@/components/Breadcrumb'
-import DishImage from '@/components/DishImage'
+import ProductCard from '@/components/ProductCard'
 import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
-import { Link, useLocation, useRevalidator, useSearchParams } from 'react-router'
+import { useLocation, useRevalidator, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import '@/styles/menu.scss'
 
@@ -32,9 +32,7 @@ const SORT_LABELS: Record<SortOption, string> = {
   price_desc: 'Giá giảm dần',
 }
 
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
-}
+
 
 function sortProducts(list: LunchProduct[], sort: SortOption): LunchProduct[] {
   if (sort === 'price_asc') return [...list].sort((a, b) => a.price - b.price)
@@ -298,45 +296,27 @@ function MenuPage() {
       {!loading && !apiError && pagedProducts.length > 0 && (
         <>
           <p className="menu-page__count">{sortedProducts.length} món trong thực đơn</p>
+
           <div className="menu-page__grid">
             {pagedProducts.map((product) => (
-              <article className="menu-dish" key={product.id}>
-                <DishImage src={product.image} name={product.name} className="menu-dish__image" loading="lazy" />
-                <div className="menu-dish__body">
-                  <p className="menu-page__eyebrow">{categoryNamesById.get(product.categoryId ?? '') ?? product.category}</p>
-                  <h2>{product.name}</h2>
-                  <p className="menu-dish__ingredients">
-                    {product.description || product.ingredients.slice(0, 3).join(' · ') || 'Chưa có thông tin nguyên liệu'}
-                  </p>
-                  <div className="menu-dish__order">
-                    <p className="menu-dish__price">{formatPrice(product.price)}</p>
-                    <div className="menu-dish__actions">
-                      <button
-                        type="button"
-                        className="site-button site-button--primary"
-                        aria-label={product.isAvailable ? `Thêm vào giỏ: ${product.name}` : `Tạm hết món: ${product.name}`}
-                        onClick={() => handleAddToCart(product.id)}
-                        disabled={!product.isAvailable}
-                      >
-                        {product.isAvailable ? '+ Thêm vào giỏ' : 'Tạm hết món'}
-                      </button>
-                      <Link
-                        className="site-button"
-                        to={`/product/${encodeURIComponent(product.id)}`}
-                        state={{ fromMenu: `/menu${canonicalSearch}` }}
-                        aria-label={`Chi tiết món ${product.name}`}
-                      >
-                        Chi tiết <span aria-hidden="true">→</span>
-                      </Link>
-                    </div>
-                    <p className="action-status" role="status">
-                      {addedProduct?.id === product.id && `Đã thêm · ${addedProduct.count} phần ${product.name} trong giỏ.`}
-                    </p>
-                  </div>
-                </div>
-              </article>
+              <ProductCard
+                key={product.id}
+                product={product}
+                categoryName={
+                  categoryNamesById.get(product.categoryId ?? '') ??
+                  product.category
+                }
+                menuHref={`/menu${canonicalSearch}`}
+                onAddToCart={handleAddToCart}
+                statusMessage={
+                  addedProduct?.id === product.id
+                    ? `Đã thêm · ${addedProduct.count} phần ${product.name} trong giỏ.`
+                    : undefined
+                }
+              />
             ))}
           </div>
+
         </>
       )}
 
