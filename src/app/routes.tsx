@@ -11,6 +11,7 @@ import LoginPage from '@/pages/LoginPage'
 import OrdersPage from '@/pages/OrdersPage'
 import OrderDetailPage from '@/pages/OrderDetailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import FavoritesPage from '@/pages/FavoritesPage'
 
 const catalogLoader = createCatalogLoader(store)
 
@@ -33,6 +34,7 @@ const router = createBrowserRouter(
       <Route path="checkout" element={<CheckoutPage />} loader={catalogLoader} />
       <Route path="login" element={<LoginPage />} />
       <Route path="orders" element={<OrdersPage />} />
+      <Route path="favorites" element={<FavoritesPage />} loader={catalogLoader} />
       <Route path="orders/:orderId" element={<OrderDetailPage />} />
       <Route path="*" element={<NotFoundPage />} loader={catalogLoader} />
     </Route>,

@@ -73,6 +73,26 @@ function SiteHeader({ menuHref, cartQuantity }: SiteHeaderProps) {
               <div className="site-account-menu__panel">
                 <strong>{user.firstName} {user.lastName}</strong>
                 <p>@{user.username}</p>
+
+                <Link
+                  to="/favorites"
+                  state={navigationState}
+                  className="site-button"
+                  style={{
+                    display: 'block',
+                    marginBottom: 8,
+                    textAlign: 'center',
+                    textDecoration: 'none',
+                  }}
+                  onClick={() => {
+                    if (accountMenu.current) {
+                      accountMenu.current.open = false
+                    }
+                  }}
+                >
+                  ♡ Món yêu thích
+                </Link>
+
                 <Link
                   to="/orders"
                   className="site-button"

@@ -9,6 +9,7 @@ import { addToCart } from '@/features/cart/cartSlice'
 import { selectCatalog } from '@/features/catalog/catalogSlice'
 import bunBoImage from '@/assets/home/bunbo.webp'
 import '@/styles/home.scss'
+import { useFavorites } from '@/features/favorites/useFavorites'
 
 const benefits = [
   { icon: '☷', title: 'Thực đơn dễ tìm', description: 'Tìm kiếm, lọc và sắp xếp' },
@@ -25,6 +26,7 @@ const orderSteps = [
 function HomePage() {
   usePageTitle()
   const dispatch = useDispatch<AppDispatch>()
+  const { isFavorite, toggleFavorite, authLoading } = useFavorites()
   const { products, status, categories, categoriesStatus } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
   const navigate = useNavigate()
@@ -152,6 +154,8 @@ function HomePage() {
                   product={product}
                   menuHref={menuHref}
                   onAddToCart={(productId) => dispatch(addToCart(productId))}
+                  isFavorite={isFavorite(product.id)}
+                  onToggleFavorite={authLoading ? undefined : toggleFavorite}
                 />
               ))}
             </div>

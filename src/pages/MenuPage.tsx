@@ -10,6 +10,7 @@ import { selectCatalog } from '@/features/catalog/catalogSlice'
 import { useLocation, useRevalidator, useSearchParams } from 'react-router'
 import type { LunchProduct } from '@/models/product'
 import '@/styles/menu.scss'
+import { useFavorites } from '@/features/favorites/useFavorites'
 
 const ALL_CATEGORIES = 'Tất cả'
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
@@ -65,6 +66,7 @@ function buildSearch(params: MenuQuery): string {
 function MenuPage() {
   usePageTitle('Thực đơn')
   const dispatch = useDispatch<AppDispatch>()
+  const { isFavorite, toggleFavorite, authLoading } = useFavorites()
   const {
     products,
     status,
@@ -297,6 +299,7 @@ function MenuPage() {
         <>
           <p className="menu-page__count">{sortedProducts.length} món trong thực đơn</p>
 
+
           <div className="menu-page__grid">
             {pagedProducts.map((product) => (
               <ProductCard
@@ -308,6 +311,8 @@ function MenuPage() {
                 }
                 menuHref={`/menu${canonicalSearch}`}
                 onAddToCart={handleAddToCart}
+                isFavorite={isFavorite(product.id)}
+                onToggleFavorite={authLoading ? undefined : toggleFavorite}
                 statusMessage={
                   addedProduct?.id === product.id
                     ? `Đã thêm · ${addedProduct.count} phần ${product.name} trong giỏ.`
@@ -316,6 +321,7 @@ function MenuPage() {
               />
             ))}
           </div>
+
 
         </>
       )}
