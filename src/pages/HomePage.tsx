@@ -1,4 +1,4 @@
-import { useEffect, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext, useRevalidator } from 'react-router'
 import { useAppSelector } from '@/app/hooks'
 import { usePageTitle } from '@/app/usePageTitle'
@@ -32,6 +32,29 @@ function HomePage() {
   const navigate = useNavigate()
   const { hash, key } = useLocation()
   const menuHref = useOutletContext<string>()
+  const cartItems = useAppSelector((state) => state.cart.items)
+
+  const [addedProduct, setAddedProduct] = useState<{
+    id: string
+    count: number
+  } | null>(null)
+
+  const categoryNamesById = new Map(
+    categories.map((category) => [category.id, category.name]),
+  )
+
+  function handleAddToCart(productId: string) {
+    const previousQuantity = cartItems
+      .filter((item) => item.productId === productId)
+      .reduce((total, item) => total + item.quantity, 0)
+
+    dispatch(addToCart(productId))
+
+    setAddedProduct({
+      id: productId,
+      count: previousQuantity + 1,
+    })
+  }
 
   const featuredProducts = products.filter((product) => product.isFeatured && product.isAvailable).slice(0, 4)
 
@@ -93,7 +116,30 @@ function HomePage() {
             <form className="home-search" role="search" onSubmit={handleSearch}>
               <label htmlFor="home-search">Tìm món ăn yêu thích</label>
               <div className="home-search__fields">
-                <input id="home-search" name="q" type="search" placeholder="Bạn muốn ăn gì hôm nay?" />
+
+                <div className="home-search__input">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    aria-hidden="true"
+                  >
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="m16 16 5 5" />
+                  </svg>
+
+                  <input
+                    id="home-search"
+                    name="q"
+                    type="search"
+                    placeholder="Tìm cơm, phở, bún, đồ uống..."
+                    autoComplete="off"
+                  />
+                </div>
+
                 <button className="home-button home-button--primary" type="submit">Tìm món</button>
               </div>
             </form>
@@ -114,10 +160,23 @@ function HomePage() {
             <ul className="home-grid home-categories">
               {categories.map((category) => (
                 <li key={category.id}>
-                  <Link className="home-category" to={`/menu?${new URLSearchParams({ category: category.name })}`}>
-                    <strong>{category.name}</strong>
-                    <span aria-hidden="true">↗</span>
+
+                  <Link
+                    className="home-category"
+                    to={`/menu?${new URLSearchParams({
+                      category: category.name,
+                    })}`}
+                  >
+                    <div className="home-category__content">
+                      <strong>{category.name}</strong>
+                      <small>Khám phá thực đơn</small>
+                    </div>
+
+                    <span className="home-category__arrow" aria-hidden="true">
+                      →
+                    </span>
                   </Link>
+
                 </li>
               ))}
             </ul>
@@ -148,16 +207,27 @@ function HomePage() {
           )}
           {status === 'ready' && featuredProducts.length > 0 && (
             <div className="home-grid">
+
               {featuredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   product={product}
+                  categoryName={
+                    categoryNamesById.get(product.categoryId ?? '') ??
+                    product.category
+                  }
                   menuHref={menuHref}
-                  onAddToCart={(productId) => dispatch(addToCart(productId))}
+                  onAddToCart={handleAddToCart}
                   isFavorite={isFavorite(product.id)}
                   onToggleFavorite={authLoading ? undefined : toggleFavorite}
+                  statusMessage={
+                    addedProduct?.id === product.id
+                      ? `Đã thêm · ${addedProduct.count} phần trong giỏ.`
+                      : undefined
+                  }
                 />
               ))}
+
             </div>
           )}
           <Link className="home-button home-featured__more" to="/menu">
