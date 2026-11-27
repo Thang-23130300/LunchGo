@@ -13,6 +13,7 @@ import Breadcrumb from '@/components/Breadcrumb'
 import DishImage from '@/components/DishImage'
 import '../styles/product-detail.scss'
 import { useFavorites } from '@/features/favorites/useFavorites'
+import ProductReviews from '@/components/ProductReviews'
 
 const CATEGORY_LABELS: Record<string, string> = {
   COM: 'Cơm',
@@ -489,6 +490,7 @@ const categoryName =
         </div>
       
       </div>
+      <ProductReviews product={product} />
     </section>
   )
 }
