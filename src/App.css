@@ -172,6 +172,9 @@
 }
 .site-account-menu__panel p { margin: 4px 0 14px; color: var(--site-muted); font-size: 13px; }
 .site-account-menu__panel .site-button { width: 100%; }
+.site-account-menu__links { display: grid; gap: 4px; margin-bottom: 12px; }
+.site-account-menu__links a { padding: 8px; color: var(--site-deep); font-size: 14px; text-decoration: none; }
+.site-account-menu__links a:hover { background: var(--site-tint); }
 
 .page-content {
   flex: 1;

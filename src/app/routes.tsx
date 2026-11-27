@@ -9,6 +9,9 @@ import CheckoutPage from '@/pages/CheckoutPage'
 import HomePage from '@/pages/HomePage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/LoginPage'
+import AccountLayout from '@/components/layouts/AccountLayout'
+import AccountProfilePage from '@/pages/AccountProfilePage'
+import AccountEmptyPage from '@/pages/AccountEmptyPage'
 
 const catalogLoader = createCatalogLoader(store)
 
@@ -30,6 +33,11 @@ const router = createBrowserRouter(
       <Route path="cart" element={<CartPage />} loader={catalogLoader} />
       <Route path="checkout" element={<CheckoutPage />} loader={catalogLoader} />
       <Route path="login" element={<LoginPage />} />
+      <Route path="account" element={<AccountLayout />}>
+        <Route index element={<AccountProfilePage />} />
+        <Route path="orders" element={<AccountEmptyPage section="orders" />} />
+        <Route path="favorites" element={<AccountEmptyPage section="favorites" />} />
+      </Route>
       <Route path="*" element={<NotFoundPage />} loader={catalogLoader} />
     </Route>,
   ),

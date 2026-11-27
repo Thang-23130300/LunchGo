@@ -203,6 +203,16 @@ Mở `/login` hoặc nút **Tài khoản** trên Header. Giao diện dựa trên
 
 Login dùng AuthService độc lập với API món ăn. Các route cần catalog vẫn dùng chung `catalogLoader`; route Login không chờ tải sản phẩm/danh mục. File kiểm thử trình duyệt chỉ lưu bên ngoài repository.
 
+### L04 — My Account
+
+Mở **Tài khoản → Hồ sơ** sau khi đăng nhập hoặc truy cập `/account`. Trang dựa trên bố cục My Account trong PDF đã thống nhất: sidebar tài khoản, avatar/họ tên và bảng thông tin liên hệ. `UserProfile.address` giữ các trường địa chỉ công khai từ DummyJSON; `fetchUserProfile()` tải `/auth/me` nếu lần đăng nhập mới chỉ trả hồ sơ cơ bản. Avatar lỗi dùng chữ cái đầu của họ tên. Khi tải hồ sơ có lỗi tạm thời, trang cho phép thử lại; token hết hạn được làm mới một lần và phiên không hợp lệ được đưa về Login.
+
+Người dùng có thể sửa số điện thoại và địa chỉ mặc định trong **Thông tin bổ sung**. Lưu thành công cập nhật ngay thông tin hiển thị. Dữ liệu dùng khóa `lunchgo:v1:profile:<userId>`, cấu trúc `{ version: 1, userId, phone, address }`, tách riêng từng tài khoản và vẫn còn sau đăng xuất/F5. Thông tin lưu bổ sung được ưu tiên so với dữ liệu API; chuỗi trống là lựa chọn xóa nội dung liên hệ. Hồ sơ không ghi mật khẩu/token vào khóa này và không sửa dữ liệu DummyJSON. Dữ liệu lưu lỗi hoặc không đúng userId/phiên bản được bỏ qua để dùng dữ liệu API. Nếu trình duyệt chặn lưu hoặc hết dung lượng, trang hiển thị lỗi và giữ thông tin đã lưu trước đó.
+
+Hàm dùng chung tại `src/features/account/accountProfile.ts`: `getAccountContact(user)`, `loadProfileExtras(userId)`, `saveProfileExtras(userId, values)`, `formatUserAddress(address)` và `validateProfileExtras(values)`. Điện thoại chấp nhận định dạng quốc tế, 7–15 chữ số; địa chỉ tối đa 500 ký tự. Hai trường là tùy chọn. Các module sau có thể dùng `getAccountContact` để lấy dữ liệu API kết hợp thông tin bổ sung theo tài khoản.
+
+Sidebar và menu tài khoản trên Header liên kết Hồ sơ, Đơn hàng, Yêu thích và Đăng xuất. Các route tài khoản đều chờ khôi phục phiên trước khi quyết định chuyển sang Login, giữ đường dẫn đích và query/hash. Theo phạm vi L04 đã chọn, `/account/orders` và `/account/favorites` chỉ hiển thị trang cùng trạng thái trống và nút mở thực đơn; lịch sử đơn hàng và lưu yêu thích sẽ được nối ở bước sau. Không thêm đơn hàng hoặc món yêu thích mẫu.
+
 ## Store và giao diện
 
 - Store: `src/app/store.ts`; `Provider` bọc ứng dụng tại `src/main.tsx`.
@@ -220,6 +230,9 @@ Login dùng AuthService độc lập với API món ăn. Các route cần catalo
 | `/cart` | Giỏ hàng |
 | `/checkout` | Thanh toán |
 | `/login` | Đăng nhập bằng tài khoản demo DummyJSON |
+| `/account` | Hồ sơ và thông tin liên hệ theo tài khoản |
+| `/account/orders` | Trang Đơn hàng, hiện có trạng thái trống |
+| `/account/favorites` | Trang Yêu thích, hiện có trạng thái trống |
 | `*` | Trang 404 cho đường dẫn không tồn tại |
 
 React Router giữ bộ lọc thực đơn khi tải lại và dùng Back/Forward. Nút quay về Thực đơn từ giỏ hoặc checkout giữ bộ lọc đang dùng.

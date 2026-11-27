@@ -1,3 +1,11 @@
+export interface UserAddress {
+  address?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+}
+
 export interface UserProfile {
   id: number
   username: string
@@ -7,6 +15,7 @@ export interface UserProfile {
   image: string
   gender?: string
   phone?: string
+  address?: UserAddress
 }
 
 export interface LoginCredentials {

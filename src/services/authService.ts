@@ -1,5 +1,5 @@
 import { authRequest, AuthError } from '@/api/auth'
-import type { AuthSession, AuthTokens, LoginCredentials, RefreshTokenRequest, UserProfile } from '@/models/auth'
+import type { AuthSession, AuthTokens, LoginCredentials, RefreshTokenRequest, UserAddress, UserProfile } from '@/models/auth'
 
 export { AuthError } from '@/api/auth'
 
@@ -13,6 +13,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function readAddress(value: unknown): UserAddress | undefined {
+  if (!isRecord(value)) return undefined
+  const address: UserAddress = {}
+  for (const field of ['address', 'city', 'state', 'postalCode', 'country'] as const) {
+    if (typeof value[field] === 'string') address[field] = value[field]
+  }
+  return Object.keys(address).length > 0 ? address : undefined
+}
+
 function readUser(value: unknown): UserProfile {
   if (!isRecord(value) || typeof value.id !== 'number' || !Number.isSafeInteger(value.id) || value.id <= 0 ||
       typeof value.username !== 'string' || !value.username.trim() ||
@@ -22,6 +31,7 @@ function readUser(value: unknown): UserProfile {
   }
 
   // Keep only public profile fields; /auth/me also returns unrelated demo data.
+  const address = readAddress(value.address)
   return {
     id: value.id,
     username: value.username,
@@ -31,6 +41,7 @@ function readUser(value: unknown): UserProfile {
     image: value.image,
     ...(typeof value.gender === 'string' ? { gender: value.gender } : {}),
     ...(typeof value.phone === 'string' ? { phone: value.phone } : {}),
+    ...(address ? { address } : {}),
   }
 }
 

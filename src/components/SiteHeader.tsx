@@ -2,6 +2,7 @@ import { useRef } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { useAppDispatch, useAppSelector } from '@/app/hooks'
 import { logout, selectCurrentUser } from '@/features/auth/authSlice'
+import { accountLinks } from '@/features/account/accountNavigation'
 
 const links = [
   { to: '/', label: 'Trang chủ' },
@@ -73,6 +74,11 @@ function SiteHeader({ menuHref, cartQuantity }: SiteHeaderProps) {
               <div className="site-account-menu__panel">
                 <strong>{user.firstName} {user.lastName}</strong>
                 <p>@{user.username}</p>
+                <nav className="site-account-menu__links" aria-label="Lối tắt tài khoản">
+                  {accountLinks.map(({ to, label }) => <Link key={to} to={to} state={navigationState} onClick={() => {
+                    if (accountMenu.current) accountMenu.current.open = false
+                  }}>{label}</Link>)}
+                </nav>
                 <button className="site-button" type="button" onClick={() => dispatch(logout())}>Đăng xuất</button>
               </div>
             </details>
