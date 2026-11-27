@@ -247,7 +247,7 @@ function MenuPage() {
         <p className="text-secondary" role="status">Đang tải lại dữ liệu...</p>
       )}
 
-     
+
 <div className="menu-page__filters">
   <div>
     <label htmlFor="menu-search">
@@ -329,7 +329,7 @@ function MenuPage() {
 
       {!loading && !apiError && sortedProducts.length === 0 && (
         <div className="menu-page__empty">
-         
+
 <span className="menu-page__empty-icon" aria-hidden="true">
   <svg
     width="32"
@@ -358,7 +358,7 @@ function MenuPage() {
 
       {!loading && !apiError && pagedProducts.length > 0 && (
         <>
-          
+
 <div className="menu-page__results">
   <div>
     <p className="menu-page__count" role="status">

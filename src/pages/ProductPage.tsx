@@ -355,7 +355,7 @@ const categoryName =
 
                 {productGroups.map((group) => (
                   <div key={group.id} className="product-detail__option-group">
-                   
+
 <div className="product-detail__option-heading">
   <h3>{group.name}</h3>
 
@@ -423,7 +423,7 @@ const categoryName =
               </div>
             )}
 
-          
+
 <div className="product-detail__total">
   <div className="product-detail__total-row">
     <span>Giá món ăn</span>
@@ -496,7 +496,7 @@ const categoryName =
             </p>
           </div>
         </div>
-      
+
       </div>
       <ProductReviews product={product} />
     </section>
