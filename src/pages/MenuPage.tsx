@@ -13,6 +13,18 @@ import '@/styles/menu.scss'
 import { useFavorites } from '@/features/favorites/useFavorites'
 
 const ALL_CATEGORIES = 'Tất cả'
+const CATEGORY_LABELS: Record<string, string> = {
+  Com: 'Cơm',
+  Bun: 'Bún',
+  PhoHuTieu: 'Phở / Hủ tiếu',
+  Mi: 'Mì',
+  BanhMi: 'Bánh mì',
+  Cuon: 'Cuốn',
+  Banh: 'Bánh',
+  Chao: 'Cháo',
+  Salad: 'Salad',
+  DoUong: 'Đồ uống',
+}
 const PAGE_SIZE_OPTIONS = [12, 24, 48]
 const DEFAULT_PAGE_SIZE = 12
 
@@ -139,6 +151,11 @@ function MenuPage() {
   const safePage = Math.min(page, totalPages)
   const query: MenuQuery = { q: keyword, category: selectedCategory, sort, page: safePage, pageSize }
   const canonicalSearch = buildSearch(query)
+  const hasActiveFilters =
+  keyword !== '' ||
+  selectedCategory !== ALL_CATEGORIES ||
+  sort !== 'default' ||
+  pageSize !== DEFAULT_PAGE_SIZE
 
   useEffect(() => {
     pendingSearch.current = null
@@ -230,51 +247,81 @@ function MenuPage() {
         <p className="text-secondary" role="status">Đang tải lại dữ liệu...</p>
       )}
 
-      <div className="menu-page__filters">
-        <div>
-          <label htmlFor="menu-search">Tìm món ăn hoặc nguyên liệu</label>
-          <input
-            ref={searchInput}
-            id="menu-search"
-            type="search"
-            className="form-control"
-            placeholder="Tìm món ăn hoặc nguyên liệu..."
-            value={inputValue}
-            onChange={(e) => handleKeywordChange(e.target.value)}
-            onCompositionStart={() => { composing.current = true }}
-            onCompositionEnd={(e) => {
-              composing.current = false
-              handleKeywordChange(e.currentTarget.value)
-            }}
-          />
-        </div>
-        <div>
-          <label htmlFor="menu-category">Danh mục</label>
-          <select
-            id="menu-category"
-            className="form-select"
-            value={selectedCategory}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-          >
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="menu-sort">Sắp xếp</label>
-          <select
-            id="menu-sort"
-            className="form-select"
-            value={sort}
-            onChange={(e) => handleSortChange(e.target.value as SortOption)}
-          >
-            {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
-              <option key={key} value={key}>{SORT_LABELS[key]}</option>
-            ))}
-          </select>
-        </div>
-      </div>
+     
+<div className="menu-page__filters">
+  <div>
+    <label htmlFor="menu-search">
+      Tìm món ăn hoặc nguyên liệu
+    </label>
+
+    <div className="menu-search__input">
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        aria-hidden="true"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="m16 16 5 5" />
+      </svg>
+
+      <input
+        ref={searchInput}
+        id="menu-search"
+        type="search"
+        className="form-control"
+        placeholder="Tìm cơm, phở, bún, nguyên liệu..."
+        value={inputValue}
+        onChange={(e) => handleKeywordChange(e.target.value)}
+        onCompositionStart={() => {
+          composing.current = true
+        }}
+        onCompositionEnd={(e) => {
+          composing.current = false
+          handleKeywordChange(e.currentTarget.value)
+        }}
+      />
+    </div>
+  </div>
+
+  <div>
+    <label htmlFor="menu-category">Danh mục</label>
+
+    <select
+      id="menu-category"
+      className="form-select"
+      value={selectedCategory}
+      onChange={(e) => handleCategoryChange(e.target.value)}
+    >
+      {categories.map((cat) => (
+  <option key={cat} value={cat}>
+    {CATEGORY_LABELS[cat] ?? cat}
+  </option>
+))}
+    </select>
+  </div>
+
+  <div>
+    <label htmlFor="menu-sort">Sắp xếp</label>
+
+    <select
+      id="menu-sort"
+      className="form-select"
+      value={sort}
+      onChange={(e) => handleSortChange(e.target.value as SortOption)}
+    >
+      {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+        <option key={key} value={key}>
+          {SORT_LABELS[key]}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
 
       {loading && (
         <p className="text-secondary" role="status">Đang tải thực đơn...</p>
@@ -282,12 +329,26 @@ function MenuPage() {
 
       {!loading && !apiError && sortedProducts.length === 0 && (
         <div className="menu-page__empty">
-          <span className="menu-page__empty-icon" aria-hidden="true">⌕</span>
+         
+<span className="menu-page__empty-icon" aria-hidden="true">
+  <svg
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+  >
+    <circle cx="11" cy="11" r="7" />
+    <path d="m16 16 5 5" />
+  </svg>
+</span>
+
           <div role="status">
             <h2>{products.length === 0 ? 'Thực đơn hiện chưa có món ăn.' : 'Không tìm thấy món ăn phù hợp.'}</h2>
             <p>{products.length === 0 ? 'Bạn vui lòng quay lại sau.' : 'Thử tìm tên món khác hoặc thay đổi danh mục.'}</p>
           </div>
-          {(keyword || selectedCategory !== ALL_CATEGORIES) && (
+           {hasActiveFilters && (
             <button type="button" className="site-button site-button--primary" onClick={clearFilters}>
               Xóa bộ lọc
             </button>
@@ -297,7 +358,33 @@ function MenuPage() {
 
       {!loading && !apiError && pagedProducts.length > 0 && (
         <>
-          <p className="menu-page__count">{sortedProducts.length} món trong thực đơn</p>
+          
+<div className="menu-page__results">
+  <div>
+    <p className="menu-page__count" role="status">
+      Tìm thấy {sortedProducts.length} món ăn
+    </p>
+
+    <p className="menu-page__result-description">
+      {selectedCategory === ALL_CATEGORIES
+  ? 'Tất cả danh mục'
+  : CATEGORY_LABELS[selectedCategory] ?? selectedCategory}
+
+      {keyword && ` · Từ khóa: "${keyword}"`}
+    </p>
+  </div>
+
+  {hasActiveFilters && (
+    <button
+      type="button"
+      className="menu-page__reset"
+      onClick={clearFilters}
+    >
+      × Xóa bộ lọc
+    </button>
+  )}
+</div>
+
 
 
           <div className="menu-page__grid">
@@ -372,7 +459,7 @@ function MenuPage() {
             </nav>
           )}
 
-          <div className="d-flex align-items-center gap-2">
+         <div className="menu-page__page-size">
             <label htmlFor="page-size-select" className="text-secondary small mb-0">
               Mỗi trang:
             </label>
