@@ -13,6 +13,21 @@ import Breadcrumb from '@/components/Breadcrumb'
 import DishImage from '@/components/DishImage'
 import '../styles/product-detail.scss'
 import { useFavorites } from '@/features/favorites/useFavorites'
+import ProductReviews from '@/components/ProductReviews'
+import { useSoldCount } from '@/features/products/useSoldCount'
+
+const CATEGORY_LABELS: Record<string, string> = {
+  COM: 'Cơm',
+  BUN: 'Bún',
+  PHOHUTIEU: 'Phở / Hủ tiếu',
+  MI: 'Mì',
+  BANHMI: 'Bánh mì',
+  CUON: 'Cuốn',
+  BANH: 'Bánh',
+  CHAO: 'Cháo',
+  SALAD: 'Salad',
+  DOUONG: 'Đồ uống',
+}
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -68,10 +83,21 @@ function ProductDetails({ id }: { id: string | undefined }) {
   const [optionError, setOptionError] = useState('')
   const { pathname, search } = useLocation()
   const menuHref = useOutletContext<string>()
-  const { products, status } = useAppSelector(selectCatalog)
+ const { products, status, categories } = useAppSelector(selectCatalog)
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const product = products.find((item) => item.id === id)
+  const soldCount = useSoldCount(
+  id ?? '',
+  product?.baseSoldCount ?? 0
+)
+  const rawCategory =
+  categories.find((category) => category.id === product?.categoryId)?.name
+  ?? product?.category
+  ?? ''
+
+const categoryName =
+  CATEGORY_LABELS[rawCategory.toUpperCase()] ?? rawCategory
   usePageTitle(product?.name ?? 'Chi tiết món')
   const cartQuantity = useAppSelector((state) =>
     state.cart.items.reduce((sum, item) => item.productId === id ? sum + item.quantity : sum, 0)
@@ -269,13 +295,21 @@ function ProductDetails({ id }: { id: string | undefined }) {
           </div>
 
           <div className="product-detail__information">
-            <span className="product-detail__category">
-              {product.category}
-            </span>
+          <span className="product-detail__category">
+  {categoryName}
+</span>
 
             <h1 className="product-detail__name">
               {product.name}
             </h1>
+            <div className="product-detail__sold-count">
+  Đã bán <strong>{soldCount}</strong> phần
+</div>
+            {product.description && (
+  <p className="product-detail__description">
+    {product.description}
+  </p>
+)}
 
             <p className="product-detail__price">
               {formatPrice(product.price)}
@@ -321,13 +355,30 @@ function ProductDetails({ id }: { id: string | undefined }) {
 
                 {productGroups.map((group) => (
                   <div key={group.id} className="product-detail__option-group">
-                    <h3>{group.name}</h3>
 
-                    <p>
-                      {group.isRequired ? 'Bắt buộc' : 'Không bắt buộc'}
-                      {' · '}
-                      Chọn từ {group.minSelection} đến {group.maxSelection}
-                    </p>
+<div className="product-detail__option-heading">
+  <h3>{group.name}</h3>
+
+  <span
+    className={`product-detail__option-badge${
+      group.isRequired ? ' is-required' : ''
+    }`}
+  >
+    {group.isRequired ? 'Bắt buộc' : 'Tùy chọn'}
+  </span>
+</div>
+
+<p>
+  {group.selectionType === 'SINGLE'
+    ? group.isRequired || group.minSelection > 0
+      ? 'Chọn 1 lựa chọn'
+      : 'Chọn tối đa 1 lựa chọn'
+    : `Chọn từ ${Math.max(
+        group.minSelection,
+        group.isRequired ? 1 : 0
+      )} đến ${group.maxSelection} lựa chọn`}
+</p>
+
 
                     {group.choices.map((option) => (
                       <label
@@ -372,9 +423,29 @@ function ProductDetails({ id }: { id: string | undefined }) {
               </div>
             )}
 
-            <div className="product-detail__total">
-              <strong>Tổng tiền: {formatPrice(totalPrice)}</strong>
-            </div>
+
+<div className="product-detail__total">
+  <div className="product-detail__total-row">
+    <span>Giá món ăn</span>
+    <span>{formatPrice(product.price)}</span>
+  </div>
+
+  <div className="product-detail__total-row">
+    <span>Phụ phí tùy chọn</span>
+    <span>{formatPrice(additionalPrice)}</span>
+  </div>
+
+  <div className="product-detail__total-row">
+    <span>Số lượng</span>
+    <span>× {quantity}</span>
+  </div>
+
+  <div className="product-detail__total-final">
+    <strong>Tổng tiền</strong>
+    <strong>{formatPrice(totalPrice)}</strong>
+  </div>
+</div>
+
             <div className="product-detail__quantity">
               <span className="product-detail__quantity-label">
                 Số lượng
@@ -413,7 +484,11 @@ function ProductDetails({ id }: { id: string | undefined }) {
               disabled={!product.isAvailable}
               onClick={handleAddToCart}
             >
-              + Thêm {quantity > 1 ? `${quantity} sản phẩm` : 'vào giỏ hàng'}
+              {!product.isAvailable
+  ? 'Tạm hết món'
+  : quantity > 1
+    ? `+ Thêm ${quantity} phần vào giỏ hàng`
+    : '+ Thêm vào giỏ hàng'}
             </button>
 
             <p className="action-status" role="status">
@@ -421,11 +496,9 @@ function ProductDetails({ id }: { id: string | undefined }) {
             </p>
           </div>
         </div>
-        <div className="page-note">
-          <strong>Điều hướng quay lại thực đơn</strong>
-          <p>Các bộ lọc trước đó được giữ khi bạn quay lại từ chi tiết món.</p>
-        </div>
+
       </div>
+      <ProductReviews product={product} />
     </section>
   )
 }

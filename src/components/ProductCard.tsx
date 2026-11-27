@@ -3,6 +3,8 @@ import { Link } from 'react-router'
 import DishImage from '@/components/DishImage'
 import type { LunchProduct } from '@/models/product'
 import '@/styles/product-card.scss'
+import { useReviews } from '@/features/reviews/useReviews'
+import { useSoldCount } from '@/features/products/useSoldCount'
 
 interface ProductCardProps {
   product: LunchProduct
@@ -26,11 +28,30 @@ function ProductCard({
   onAddToCart,
   isFavorite = false,
   onToggleFavorite,
-  rating = product.baseRating ?? 0,
-  reviewCount = product.baseReviewCount ?? 0,
-  soldCount = product.baseSoldCount ?? 0,
+  rating: ratingOverride,
+reviewCount: reviewCountOverride,
+ soldCount: soldCountOverride,
   statusMessage,
 }: ProductCardProps) {
+  const reviewSummary = useReviews(
+    product.id,
+    product.baseRating ?? 0,
+    product.baseReviewCount ?? 0
+  )
+
+  const rating =
+    ratingOverride ?? reviewSummary.averageRating
+
+  const reviewCount =
+    reviewCountOverride ?? reviewSummary.reviewCount
+    const calculatedSoldCount = useSoldCount(
+  product.id,
+  product.baseSoldCount ?? 0
+)
+
+const soldCount =
+  soldCountOverride ?? calculatedSoldCount
+
   return (
     <article className="product-card">
       <div className="product-card__media">
