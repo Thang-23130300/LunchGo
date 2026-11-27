@@ -1,4 +1,4 @@
-import { createBrowserRouter, createRoutesFromElements, Route } from 'react-router'
+import { createBrowserRouter, createRoutesFromElements, Navigate, Route, useLocation, useOutletContext } from 'react-router'
 import { RouterProvider } from 'react-router/dom'
 import { store } from '@/app/store'
 import CustomerLayout from '@/components/layouts/CustomerLayout'
@@ -9,11 +9,19 @@ import CheckoutPage from '@/pages/CheckoutPage'
 import HomePage from '@/pages/HomePage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import LoginPage from '@/pages/LoginPage'
-import AccountLayout from '@/components/layouts/AccountLayout'
+import AccountLayout, { type AccountContext } from '@/components/layouts/AccountLayout'
 import AccountProfilePage from '@/pages/AccountProfilePage'
-import AccountEmptyPage from '@/pages/AccountEmptyPage'
+import OrdersPage from '@/pages/OrdersPage'
+import OrderDetailPage from '@/pages/OrderDetailPage'
+import FavoritesPage from '@/pages/FavoritesPage'
 
 const catalogLoader = createCatalogLoader(store)
+
+function AccountSectionRedirect({ to }: { to: string }) {
+  const { search, hash } = useLocation()
+  const { menuHref } = useOutletContext<AccountContext>()
+  return <Navigate to={`${to}${search}${hash}`} replace state={{ fromMenu: menuHref }} />
+}
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -35,9 +43,12 @@ const router = createBrowserRouter(
       <Route path="login" element={<LoginPage />} />
       <Route path="account" element={<AccountLayout />}>
         <Route index element={<AccountProfilePage />} />
-        <Route path="orders" element={<AccountEmptyPage section="orders" />} />
-        <Route path="favorites" element={<AccountEmptyPage section="favorites" />} />
+        <Route path="orders" element={<AccountSectionRedirect to="/orders" />} />
+        <Route path="favorites" element={<AccountSectionRedirect to="/favorites" />} />
       </Route>
+      <Route path="orders" element={<OrdersPage />} />
+      <Route path="orders/:orderId" element={<OrderDetailPage />} />
+      <Route path="favorites" element={<FavoritesPage />} loader={catalogLoader} />
       <Route path="*" element={<NotFoundPage />} loader={catalogLoader} />
     </Route>,
   ),

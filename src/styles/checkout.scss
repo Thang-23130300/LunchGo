@@ -566,12 +566,32 @@
 
   &__actions {
     display: flex;
+    gap: 12px;
     justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  &__view-btn {
+    display: inline-block;
+    padding: 14px 28px;
+    border: 1px solid var(--site-primary);
+    border-radius: 2px;
+    background: white;
+    color: var(--site-primary);
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--site-tint);
+      border-color: var(--site-deep);
+      color: var(--site-deep);
+    }
   }
 
   &__menu-btn {
     display: inline-block;
-    padding: 14px 36px;
+    padding: 14px 28px;
     border: 1px solid var(--site-primary);
     border-radius: 2px;
     background: var(--site-primary);
@@ -592,6 +612,11 @@
     color: var(--site-muted);
     font-size: 12px;
     text-align: center;
+
+    a {
+      color: var(--site-primary);
+      text-decoration: underline;
+    }
   }
 }
 

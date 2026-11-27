@@ -12,6 +12,7 @@ import { usePageTitle } from '@/app/usePageTitle'
 import Breadcrumb from '@/components/Breadcrumb'
 import DishImage from '@/components/DishImage'
 import '../styles/product-detail.scss'
+import { useFavorites } from '@/features/favorites/useFavorites'
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('vi-VN').format(price) + 'đ'
@@ -60,6 +61,7 @@ function ProductPage() {
 
 function ProductDetails({ id }: { id: string | undefined }) {
   const dispatch = useDispatch<AppDispatch>()
+  const { isFavorite, toggleFavorite, authLoading } = useFavorites()
   const [quantity, setQuantity] = useState(1)
   const [addedProduct, setAddedProduct] = useState<{ id: string; count: number }>()
   const [selectedOptionIds, setSelectedOptionIds] = useState<string[]>([])
@@ -112,7 +114,7 @@ function ProductDetails({ id }: { id: string | undefined }) {
 
     const groupSelection = selectedOptionIds.filter((id) => groupOptionIds.includes(id))
     if (selectionType === 'MULTIPLE' && !groupSelection.includes(optionId) &&
-        groupSelection.length >= group.maxSelection) {
+      groupSelection.length >= group.maxSelection) {
       setOptionError(
         `Nhóm "${group.name}" chỉ được chọn tối đa ${group.maxSelection}`
       )
@@ -227,6 +229,34 @@ function ProductDetails({ id }: { id: string | undefined }) {
           <Link className="product-detail__back" to={menuHref}>← Quay lại thực đơn</Link>
 
           <ShareButton key={pathname + search} productName={product.name} />
+
+          <button
+            type="button"
+            className={`product-detail__favorite ${isFavorite(product.id)
+                ? 'product-detail__favorite--active'
+                : ''
+              }`}
+            disabled={authLoading}
+            aria-pressed={isFavorite(product.id)}
+            onClick={() => toggleFavorite(product.id)}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill={isFavorite(product.id) ? 'currentColor' : 'none'}
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" />
+            </svg>
+
+            {isFavorite(product.id)
+              ? 'Đã yêu thích'
+              : 'Yêu thích'}
+          </button>
+
         </div>
 
         <div className="product-detail__content">
