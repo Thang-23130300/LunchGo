@@ -4,6 +4,7 @@ import DishImage from '@/components/DishImage'
 import type { LunchProduct } from '@/models/product'
 import '@/styles/product-card.scss'
 import { useReviews } from '@/features/reviews/useReviews'
+import { useSoldCount } from '@/features/products/useSoldCount'
 
 interface ProductCardProps {
   product: LunchProduct
@@ -29,7 +30,7 @@ function ProductCard({
   onToggleFavorite,
   rating: ratingOverride,
 reviewCount: reviewCountOverride,
-  soldCount = product.baseSoldCount ?? 0,
+ soldCount: soldCountOverride,
   statusMessage,
 }: ProductCardProps) {
   const reviewSummary = useReviews(
@@ -43,6 +44,13 @@ reviewCount: reviewCountOverride,
 
   const reviewCount =
     reviewCountOverride ?? reviewSummary.reviewCount
+    const calculatedSoldCount = useSoldCount(
+  product.id,
+  product.baseSoldCount ?? 0
+)
+
+const soldCount =
+  soldCountOverride ?? calculatedSoldCount
 
   return (
     <article className="product-card">

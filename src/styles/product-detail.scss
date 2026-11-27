@@ -619,3 +619,16 @@
     }
   }
 }
+.product-detail__sold-count {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 14px;
+  color: #5f6a61;
+  font-size: 14px;
+
+  strong {
+    color: #54745b;
+    font-weight: 700;
+  }
+}

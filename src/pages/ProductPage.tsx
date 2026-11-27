@@ -14,6 +14,7 @@ import DishImage from '@/components/DishImage'
 import '../styles/product-detail.scss'
 import { useFavorites } from '@/features/favorites/useFavorites'
 import ProductReviews from '@/components/ProductReviews'
+import { useSoldCount } from '@/features/products/useSoldCount'
 
 const CATEGORY_LABELS: Record<string, string> = {
   COM: 'Cơm',
@@ -86,6 +87,10 @@ function ProductDetails({ id }: { id: string | undefined }) {
   const { state: revalidationState, revalidate } = useRevalidator()
 
   const product = products.find((item) => item.id === id)
+  const soldCount = useSoldCount(
+  id ?? '',
+  product?.baseSoldCount ?? 0
+)
   const rawCategory =
   categories.find((category) => category.id === product?.categoryId)?.name
   ?? product?.category
@@ -297,6 +302,9 @@ const categoryName =
             <h1 className="product-detail__name">
               {product.name}
             </h1>
+            <div className="product-detail__sold-count">
+  Đã bán <strong>{soldCount}</strong> phần
+</div>
             {product.description && (
   <p className="product-detail__description">
     {product.description}
